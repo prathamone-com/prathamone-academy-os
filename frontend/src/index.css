@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  body {
+    @apply bg-[#F8FAFC] text-slate-900 overflow-x-hidden;
+  }
+}
+
+@layer components {
+  .bg-glass {
+    @apply bg-white/70 backdrop-blur-xl border border-white/20;
+  }
+
+  .bg-glass-dark {
+    @apply bg-slate-900/80 backdrop-blur-xl border border-slate-700/30;
+  }
+
+  .premium-card {
+    @apply bg-white rounded-3xl border border-slate-100 shadow-premium transition-all duration-300 hover:shadow-premium-hover;
+  }
+
+  .input-standard {
+    @apply w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 outline-none transition-all duration-200 text-sm;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold shadow-lg shadow-brand-500/20 active:scale-[0.98] transition-all flex items-center gap-2;
+  }
+}
+
+/* Custom Smooth Selection */
+::selection {
+  @apply bg-brand-500/20 text-brand-900;
+}
+
+/* Premium Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
