@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: p1-db
+    environment:
+      POSTGRES_DB: prathamone_os
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: localdev123
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U app_user -d prathamone_os" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: p1-backend
+    environment:
+      DATABASE_URL: postgresql://app_user:localdev123@db:5432/prathamone_os
+      SECRET_KEY: local-dev-secret-key-minimum-32-characters
+      ALGORITHM: HS256
+      SYSTEM_TENANT_ID: 00000000-0000-0000-0000-000000000000
+      ENVIRONMENT: development
+      ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+    ports:
+      - "8001:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=http://localhost:8001/api/v1
+    container_name: p1-frontend
+    ports:
+      - "5173:80"
+    environment:
+      VITE_API_URL: http://localhost:8001/api/v1
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
