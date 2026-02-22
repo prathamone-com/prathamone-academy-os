@@ -33,23 +33,23 @@ async def trigger_transition(
 ) -> dict:
     """
     Attempt a workflow state transition for an entity record.
-
-    The workflow engine:
-      1. Reads the current state from workflow_instance_state.
-      2. Looks up valid transitions in workflow_transitions for the target.
-      3. Evaluates guard policies via policy_engine (LAW 4).
-      4. If allowed, inserts a new workflow_instance_state row.
-      5. Appends an immutable audit row to workflow_state_log.
+    Mutations occur via the PL/pgSQL Kernel (LAW 12), ensuring 
+    forensic-grade audit and policy enforcement.
     """
-    engine = WorkflowEngine(conn)
-    result = await engine.transition(
-        entity_record_id=body.entity_record_id,
-        entity_code=body.entity_code,
-        target_state_code=body.target_state_code,
-        actor_id=body.actor_id,
-        context=body.context,
-    )
-    return result
+    try:
+        await conn.execute(
+            "SELECT execute_workflow_transition($1, $2, $3, $4::uuid)",
+            body.entity_code,
+            body.entity_record_id,
+            body.target_state_code,
+            body.actor_id or uuid.uuid4(),  # system actor if none
+        )
+        return {"status": "success", "to_state": body.target_state_code}
+    except asyncpg.RaiseError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc)
+        )
 
 
 @router.get("/state/{entity_code}/{record_id}", summary="Get current workflow state")

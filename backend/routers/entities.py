@@ -299,68 +299,9 @@ async def _run_field_validations(
 # 4. Audit helpers
 # ---------------------------------------------------------------------------
 
-async def _write_audit_event(
-    conn: asyncpg.Connection,
-    *,
-    actor_id: str | None,
-    action_type: str,          # "CREATE" | "UPDATE"
-    entity_code: str,
-    entity_record_id: uuid.UUID,
-    payload: dict,
-) -> None:
-    """
-    Append ONE immutable row to audit_event_log (LAW 8 — INSERT-ONLY).
-    Never UPDATE or DELETE. The RLS policy and role REVOKE enforce this
-    independently; this function never even attempts an UPDATE.
-    """
-    await conn.execute(
-        """
-        INSERT INTO audit_event_log
-            (tenant_id, actor_id, action_type,
-             entity_code, entity_record_id, payload, created_at)
-        VALUES
-            (current_setting('app.tenant_id', true)::uuid,
-             $1::uuid, $2,
-             $3, $4, $5::jsonb, now())
-        """,
-        actor_id,
-        action_type,
-        entity_code,
-        entity_record_id,
-        json.dumps(payload),
-    )
-
-
-async def _write_state_snapshot(
-    conn: asyncpg.Connection,
-    *,
-    entity_record_id: uuid.UUID,
-    entity_code: str,
-    before: dict,
-    after: dict,
-    actor_id: str | None,
-) -> None:
-    """
-    Append ONE immutable row to audit_state_snapshot capturing before/after
-    attribute values for every UPDATE (LAW 8 — INSERT-ONLY).
-    """
-    await conn.execute(
-        """
-        INSERT INTO audit_state_snapshot
-            (tenant_id, entity_record_id, entity_code,
-             before_state, after_state, actor_id, snapshotted_at)
-        VALUES
-            (current_setting('app.tenant_id', true)::uuid,
-             $1, $2,
-             $3::jsonb, $4::jsonb,
-             $5::uuid, now())
-        """,
-        entity_record_id,
-        entity_code,
-        json.dumps(before),
-        json.dumps(after),
-        actor_id,
-    )
+# Helpers _write_audit_event and _write_state_snapshot removed.
+# Mutations are now handled by PL/pgSQL Kernel Functions which perform
+# their own audit logging and hash-chain generation (LAW 12).
 
 
 # ---------------------------------------------------------------------------
@@ -379,7 +320,7 @@ async def _fetch_eav(
         """
         SELECT
             eav.attribute_code,
-            am.label,
+            am.display_label AS label,
             am.data_type,
             CASE am.data_type
                 WHEN 'numeric' THEN eav.value_numeric::text
@@ -389,7 +330,7 @@ async def _fetch_eav(
             END AS resolved_value
         FROM   entity_attribute_values eav
         JOIN   attribute_master        am  ON am.attribute_code = eav.attribute_code
-                                          AND am.tenant_id      = eav.tenant_id
+                                           AND am.tenant_id      = eav.tenant_id
         WHERE  eav.entity_record_id = $1
         ORDER  BY am.sort_order NULLS LAST, eav.attribute_code
         """,
@@ -407,7 +348,7 @@ async def _fetch_eav_full(
         """
         SELECT
             eav.attribute_code,
-            am.label,
+            am.display_label AS label,
             am.data_type,
             CASE am.data_type
                 WHEN 'numeric' THEN eav.value_numeric::text
@@ -417,7 +358,7 @@ async def _fetch_eav_full(
             END AS value
         FROM   entity_attribute_values eav
         JOIN   attribute_master        am  ON am.attribute_code = eav.attribute_code
-                                          AND am.tenant_id      = eav.tenant_id
+                                           AND am.tenant_id      = eav.tenant_id
         WHERE  eav.entity_record_id = $1
         ORDER  BY am.sort_order NULLS LAST, eav.attribute_code
         """,
@@ -426,41 +367,8 @@ async def _fetch_eav_full(
     return [dict(r) for r in rows]
 
 
-async def _upsert_attribute(
-    conn: asyncpg.Connection,
-    record_id: uuid.UUID,
-    attribute_code: str,
-    data_type: str,
-    value: Any,
-) -> None:
-    """
-    Upsert a single attribute value into entity_attribute_values.
-    Routes the scalar into the correct typed column.
-    """
-    text_val    = str(value) if data_type in ("text", "uuid", "date", "datetime") and value is not None else (str(value) if data_type not in ("numeric", "boolean", "json") and value is not None else None)
-    num_val     = float(value) if data_type == "numeric" and value is not None else None
-    bool_val    = bool(value)  if data_type == "boolean" and value is not None else None
-    json_val    = json.dumps(value) if data_type == "json" and value is not None else None
-
-    await conn.execute(
-        """
-        INSERT INTO entity_attribute_values
-            (entity_record_id, tenant_id, attribute_code,
-             value_text, value_numeric, value_bool, value_json)
-        VALUES
-            ($1, current_setting('app.tenant_id', true)::uuid, $2,
-             $3, $4, $5, $6::jsonb)
-        ON CONFLICT (entity_record_id, tenant_id, attribute_code)
-        DO UPDATE SET
-            value_text    = EXCLUDED.value_text,
-            value_numeric = EXCLUDED.value_numeric,
-            value_bool    = EXCLUDED.value_bool,
-            value_json    = EXCLUDED.value_json,
-            updated_at    = now()
-        """,
-        record_id, attribute_code,
-        text_val, num_val, bool_val, json_val,
-    )
+# _upsert_attribute removed.
+# Logic absorbed into the PL/pgSQL create_entity_record and update_entity_record functions.
 
 
 # =============================================================================
@@ -523,46 +431,24 @@ async def create_entity_record(
     # Step 3 — Field validations
     await _run_field_validations(conn, entity_code, body.attributes)
 
-    # Step 4 — Insert entity_records.
-    # JOIN entity_master to enforce LAW 1: every entity MUST be registered.
-    # tenant_id comes from the GUC (LAW 7 — never from the request body).
-    new_id = uuid.uuid4()
-    rows_inserted = await conn.execute(
-        """
-        INSERT INTO entity_records (record_id, entity_id, tenant_id, is_active)
-        SELECT $1, em.entity_id,
-               current_setting('app.tenant_id', true)::uuid,
-               true
-        FROM   entity_master em
-        WHERE  em.entity_code = $2
-          AND  em.tenant_id   = current_setting('app.tenant_id', true)::uuid
-        """,
-        new_id, entity_code,
-    )
-    # asyncpg returns 'INSERT 0 <count>' — a count of 0 means entity not registered (LAW 1).
-    if rows_inserted == "INSERT 0 0":
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                f"Entity '{entity_code}' is not registered in entity_master (LAW 1). "
-                "Register it before creating records."
-            ),
+    # Step 4 — CREATE via Kernel Function (LAW 12)
+    # This single call handles: entity check (LAW 1), envelope insert,
+    # EAV attribute loop (LAW 2), and hash-chained audit logging (LAW 8).
+    try:
+        new_id = await conn.fetchval(
+            "SELECT create_entity_record($1, $2, $3::uuid)",
+            entity_code,
+            json.dumps([{"attribute_code": a.attribute_code, "value": a.value} for a in body.attributes]),
+            actor_id
         )
-
-    # Step 5 — Upsert attribute values
-    for attr in body.attributes:
-        defn = attr_master[attr.attribute_code]
-        await _upsert_attribute(conn, new_id, attr.attribute_code, defn["data_type"], attr.value)
-
-    # Step 6 — Audit CREATE event (LAW 8)
-    await _write_audit_event(
-        conn,
-        actor_id=actor_id,
-        action_type="CREATE",
-        entity_code=entity_code,
-        entity_record_id=new_id,
-        payload={"attributes": {a.attribute_code: a.value for a in body.attributes}},
-    )
+    except asyncpg.RaiseError as exc:
+        # Handle LAW 1 exception raised from PL/pgSQL
+        if "LAW 1 VIOLATION" in str(exc):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc)
+            )
+        raise
 
     return {
         "record_id": str(new_id),
@@ -723,65 +609,20 @@ async def update_entity_record(
             detail=f"Record '{record_id}' not found for entity '{entity_code}'.",
         )
 
-    # Step 3 — Capture BEFORE state
-    before_state = await _fetch_eav(conn, record_id)
-
-    # Step 4 — Type validation against attribute_master
-    attr_master = await _load_attribute_master(conn, entity_code)
-    type_errors: list[str] = []
-    for attr in body.attributes:
-        defn = attr_master.get(attr.attribute_code)
-        if defn is None:
-            type_errors.append(
-                f"Unknown attribute '{attr.attribute_code}' for entity '{entity_code}'. "
-                "Register it in attribute_master first (LAW 2)."
-            )
-            continue
-        try:
-            _validate_data_type(attr.attribute_code, attr.value, defn["data_type"])
-        except ValueError as exc:
-            type_errors.append(str(exc))
-
-    if type_errors:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={"type_errors": type_errors},
+    # Step 4 — UPDATE via Kernel Function (LAW 12)
+    # This handles EAV upserts, before/after snapshots, and hash-chained audit.
+    try:
+        await conn.execute(
+            "SELECT update_entity_record($1, $2, $3::uuid)",
+            record_id,
+            json.dumps([{"attribute_code": a.attribute_code, "value": a.value} for a in body.attributes]),
+            actor_id
         )
-
-    # Step 5 — Field validations
-    await _run_field_validations(conn, entity_code, body.attributes)
-
-    # Step 6 — Upsert attribute values
-    for attr in body.attributes:
-        defn = attr_master[attr.attribute_code]
-        await _upsert_attribute(conn, record_id, attr.attribute_code, defn["data_type"], attr.value)
-
-    # Step 7 — Capture AFTER state
-    after_state = await _fetch_eav(conn, record_id)
-
-    # Step 8 — Write audit_state_snapshot: before + after (LAW 8)
-    await _write_state_snapshot(
-        conn,
-        entity_record_id=record_id,
-        entity_code=entity_code,
-        before=before_state,
-        after=after_state,
-        actor_id=actor_id,
-    )
-
-    # Step 9 — Write audit_event_log (LAW 8)
-    changed = {
-        a.attribute_code: {"before": before_state.get(a.attribute_code), "after": str(a.value)}
-        for a in body.attributes
-    }
-    await _write_audit_event(
-        conn,
-        actor_id=actor_id,
-        action_type="UPDATE",
-        entity_code=entity_code,
-        entity_record_id=record_id,
-        payload={"changed_attributes": changed},
-    )
+    except asyncpg.RecordNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Record '{record_id}' not found."
+        )
 
     return {
         "record_id":          str(record_id),
