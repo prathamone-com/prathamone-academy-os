@@ -55,14 +55,14 @@ const WorkflowActions = ({ entityCode, recordId, onNotify, onTransitionSuccess }
         }
     };
 
-    if (loading) return <Loader2 className="animate-spin text-slate-400 w-5 h-5" />;
+    if (loading) return <Loader2 className="animate-spin text-gold/30 w-5 h-5" />;
     if (actions.length === 0) return null;
 
     return (
-        <div className="flex flex-wrap items-center gap-3 animate-slide-up bg-white/50 backdrop-blur-sm p-2 rounded-2xl border border-slate-100">
-            <div className="px-4 py-2 border-r border-slate-200 mr-1 flex items-center gap-2">
-                <div className="w-2 h-2 bg-brand-500 rounded-full animate-pulse"></div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Next Actions</span>
+        <div className="flex flex-wrap items-center gap-4 animate-slide-up bg-navy-lighter/40 backdrop-blur-xl p-2.5 rounded-xl border border-gold/10 shadow-gold">
+            <div className="px-5 py-2 border-r border-gold/10 mr-1 flex items-center gap-3">
+                <div className="w-1.5 h-1.5 bg-teal-bright rounded-full animate-pulse shadow-[0_0_8px_rgba(34,211,238,0.6)]"></div>
+                <span className="text-[9px] font-mono font-bold text-gold/40 uppercase tracking-[0.3em]">Neural Transitions</span>
             </div>
             {actions.map((action) => (
                 <button
@@ -70,19 +70,19 @@ const WorkflowActions = ({ entityCode, recordId, onNotify, onTransitionSuccess }
                     disabled={!!submitting}
                     onClick={() => handleAction(action)}
                     className={`
-                        group flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 shadow-sm
+                        group flex items-center gap-3 px-6 py-2.5 rounded-lg text-[10px] font-mono font-bold uppercase tracking-widest transition-all duration-500 relative overflow-hidden
                         ${action.action.includes('reject') || action.action.includes('block')
-                            ? 'bg-red-50 text-red-600 hover:bg-red-500 hover:text-white hover:shadow-red-500/20'
-                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-brand-600 hover:text-white hover:border-brand-600 hover:shadow-brand-500/20'}
-                        disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95
+                            ? 'bg-navy-deep border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white'
+                            : 'bg-navy-deep border border-gold/20 text-gold-soft hover:bg-gold hover:text-navy hover:shadow-gold'}
+                        disabled:opacity-40 disabled:scale-95 transform active:scale-90 cursor-none
                     `}
                 >
                     {submitting === action.action ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                        <PlayCircle className={`w-4 h-4 transition-transform duration-300 ${submitting ? '' : 'group-hover:translate-x-0.5'}`} />
+                        <PlayCircle className={`w-3.5 h-3.5 transition-all duration-500 ${submitting ? '' : 'group-hover:translate-x-1 group-hover:scale-110'}`} />
                     )}
-                    {action.label.toUpperCase()}
+                    {action.label}
                 </button>
             ))}
         </div>

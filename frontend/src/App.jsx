@@ -1,14 +1,41 @@
+/**
+ * App.jsx — PrathamOne Academy OS
+ *
+ * @author    Jawahar R Mallah
+ * @role      Founder & Technical Architect
+ * @web       https://aiTDL.com | https://pratham1.com
+ * @version   Author_Metadata_v1.0
+ * @copyright © 2026 Jawahar R Mallah. All rights reserved.
+ */
 import { useState } from 'react';
+import { Routes, Route, useNavigate, Navigate } from 'react-router-dom';
 import DynamicMenu from './components/DynamicMenu';
 import DynamicForm from './components/DynamicForm';
 import ReportViewer from './components/ReportViewer';
 import WorkflowActions from './components/WorkflowActions';
+import LandingPage from './pages/LandingPage';
 import { Bell, User, LogOut, Search, Settings, ChevronRight, Menu as MenuIcon, X } from 'lucide-react';
 
 function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<LandingWrapper />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
+function LandingWrapper() {
+  const navigate = useNavigate();
+  return <LandingPage onEnter={() => navigate('/dashboard')} />;
+}
+
+function Dashboard() {
   const [activeItem, setActiveItem] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const navigate = useNavigate();
 
   const addNotify = (message, type = 'info') => {
     const id = Date.now();
@@ -21,53 +48,61 @@ function App() {
   const renderContent = () => {
     if (!activeItem) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-slate-400 p-8">
-          <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-premium mb-6 animate-slide-up">
-            <LayoutDashboard size={48} className="text-brand-500/20" />
+        <div className="flex flex-col items-center justify-center min-h-[70vh] text-slate-400 p-8">
+          <div className="w-32 h-32 bg-navy-lighter rounded-3xl border border-gold/10 flex items-center justify-center shadow-gold mb-8 relative group cursor-none">
+            <div className="absolute inset-0 bg-gold/5 rounded-3xl blur-2xl group-hover:bg-gold/10 transition-all"></div>
+            <LayoutDashboard size={64} className="text-gold/20 relative z-10" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 mb-2">Welcome Back</h2>
-          <p className="font-medium text-slate-400 flex items-center gap-2">
-            Select a module from the sidebar to start working
+          <h2 className="text-3xl font-serif font-bold text-white mb-3">Sovereign Terminal</h2>
+          <p className="font-light text-slate-400 flex items-center gap-2 tracking-wide uppercase text-xs">
+            Initialize a module from the sidebar to begin operations
           </p>
         </div>
       );
     }
 
     return (
-      <div className="animate-slide-up space-y-8 p-6 md:p-10 max-w-7xl mx-auto">
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-8">
+      <div className="space-y-12 p-6 md:p-12 max-w-7xl mx-auto">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-gold/10 pb-12 relative">
+          <div className="absolute -left-12 top-0 bottom-0 w-px bg-gradient-to-b from-gold/40 to-transparent hidden xl:block"></div>
           <div>
-            <nav className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">
-              <span>Main Console</span>
-              <ChevronRight size={12} />
-              <span className="text-brand-600">{activeItem.label}</span>
+            <nav className="flex items-center gap-2 text-[10px] font-mono font-medium text-teal-bright uppercase tracking-[0.2em] mb-4">
+              <span className="opacity-50 text-white">System</span>
+              <ChevronRight size={10} />
+              <span>{activeItem.label}</span>
             </nav>
-            <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight">{activeItem.label}</h1>
-            <p className="mt-2 text-slate-500 font-medium">Manage and track your {activeItem.label.toLowerCase()} efficiently.</p>
+            <h1 className="text-5xl font-serif font-black text-white tracking-tight leading-none mb-3">
+              {activeItem.label}
+            </h1>
+            <p className="text-slate-400 font-light tracking-wide max-w-lg">
+              Authorized access to {activeItem.label.toLowerCase()} subsystem. Encrypted data stream active.
+            </p>
           </div>
-          <WorkflowActions
-            entityCode="ENROLLMENT"
-            recordId="00000000-0000-0000-0000-000000000000"
-            onNotify={addNotify}
-          />
+          <div className="relative z-10">
+            <WorkflowActions
+              entityCode="ENROLLMENT"
+              recordId="00000000-0000-0000-0000-000000000000"
+              onNotify={addNotify}
+            />
+          </div>
         </header>
 
-        <main className="transition-all duration-300">
+        <main className="transition-all duration-500">
           {activeItem.action_type === 'FORM' ? (
             <div className="max-w-4xl mx-auto">
               <DynamicForm formCode={activeItem.action_target} onNotify={addNotify} />
             </div>
           ) : activeItem.action_type === 'REPORT' ? (
-            <div className="premium-card overflow-hidden">
+            <div className="premium-card overflow-hidden bg-navy-lighter/40 backdrop-blur-md">
               <ReportViewer reportCode={activeItem.action_target} onNotify={addNotify} />
             </div>
           ) : (
-            <div className="premium-card p-10 flex flex-col items-center justify-center min-h-[40vh]">
-              <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-300 mb-4">
-                <Settings size={32} />
+            <div className="premium-card p-16 flex flex-col items-center justify-center min-h-[50vh] bg-navy-lighter/30">
+              <div className="w-20 h-20 bg-navy-deep border border-gold/10 rounded-2xl flex items-center justify-center text-gold/20 mb-6 shadow-gold">
+                <Settings size={40} />
               </div>
-              <p className="text-lg font-semibold text-slate-600">Module Dashboard - {activeItem.label}</p>
-              <p className="text-slate-400 mt-2">Route path: {activeItem.route_path}</p>
+              <h3 className="text-2xl font-serif font-bold text-white mb-2">Subsystem Interface</h3>
+              <p className="text-slate-400 font-light tracking-wide italic">Route path: {activeItem.route_path}</p>
             </div>
           )}
         </main>
@@ -76,12 +111,12 @@ function App() {
   };
 
   return (
-    <div className="flex h-screen bg-[#F8FAFC]">
+    <div className="flex h-screen bg-navy selection:bg-gold/20 selection:text-white">
       {/* Sidebar Overlay for mobile */}
       {!isSidebarOpen && (
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-brand-600 text-white rounded-full shadow-2xl z-50 flex items-center justify-center active:scale-95 transition-all"
+          className="lg:hidden fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-gold to-[#9A7B3A] text-navy rounded-full shadow-gold z-50 flex items-center justify-center active:scale-95 transition-all"
         >
           <MenuIcon />
         </button>
@@ -89,26 +124,29 @@ function App() {
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-40 w-80 bg-slate-900 text-white transition-all duration-500 ease-in-out transform
+        fixed inset-y-0 left-0 z-40 w-85 bg-navy border-r border-gold/10 transition-all duration-700 ease-in-out transform
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
-        lg:translate-x-0 lg:static flex flex-col shadow-2xl
+        lg:translate-x-0 lg:static flex flex-col shadow-2xl relative
       `}>
-        <div className="p-8 pb-10 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-brand-400 to-brand-600 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 hover:rotate-0 transition-all duration-300">
-              <span className="font-black text-xl text-white">P1</span>
+        {/* Subtle grid pattern for sidebar */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
+
+        <div className="p-10 pb-12 flex items-center justify-between relative z-10">
+          <div className="flex items-center gap-5 cursor-pointer" onClick={() => navigate('/')}>
+            <div className="w-14 h-14 bg-gradient-to-br from-gold/80 to-[#9A7B3A] rounded-xl flex items-center justify-center shadow-gold transform rotate-3 hover:rotate-0 transition-all duration-500">
+              <span className="font-serif font-black text-2xl text-navy">P1</span>
             </div>
             <div>
-              <h2 className="font-bold text-lg leading-tight tracking-tight">Academy OS</h2>
-              <span className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Kernel v1.0</span>
+              <h2 className="font-serif font-bold text-xl leading-tight tracking-tight text-white">Academy OS</h2>
+              <span className="text-[10px] font-mono font-medium uppercase text-gold/40 tracking-[0.3em]">Kernel v1.0.4</span>
             </div>
           </div>
-          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-slate-500">
+          <button onClick={() => setIsSidebarOpen(false)} className="lg:hidden text-gold/40 hover:text-gold transition-colors">
             <X size={20} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-6 custom-scrollbar relative z-10">
           <DynamicMenu
             menuCode="SIDEBAR_NAV"
             onAction={(item) => {
@@ -120,20 +158,23 @@ function App() {
           />
         </div>
 
-        <div className="p-6">
-          <div className="bg-slate-800/50 backdrop-blur-lg rounded-3xl p-5 border border-slate-700/30">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-600 flex items-center justify-center shadow-sm">
-                <User className="text-slate-400 w-6 h-6" />
+        <div className="p-8 relative z-10">
+          <div className="bg-navy-lighter/60 backdrop-blur-xl rounded-2xl p-6 border border-gold/10 hover:border-gold/30 transition-all group">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-12 h-12 rounded-xl bg-navy-deep border border-gold/10 flex items-center justify-center transition-all group-hover:border-gold/30 group-hover:shadow-gold">
+                <User className="text-gold/40 w-6 h-6 group-hover:text-gold transition-colors" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold text-white truncate">Demo User</p>
-                <p className="text-xs text-slate-500 font-medium truncate uppercase tracking-wider">Super Admin</p>
+                <p className="text-[10px] text-gold/40 font-mono font-medium uppercase tracking-[0.1em] mt-0.5">Sovereign Admin</p>
               </div>
             </div>
-            <button className="w-full flex items-center justify-center gap-2 py-3 bg-slate-800 hover:bg-red-500/10 hover:text-red-500 rounded-2xl text-xs font-bold text-slate-400 transition-all duration-200">
-              <LogOut size={14} />
-              Sign Out Account
+            <button
+              onClick={() => navigate('/')}
+              className="w-full flex items-center justify-center gap-2 py-3 bg-navy-deep border border-gold/10 hover:border-red-500/30 hover:text-red-500 rounded-xl text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest transition-all duration-300 active:scale-95"
+            >
+              <LogOut size={12} />
+              Terminate Session
             </button>
           </div>
         </div>
@@ -141,36 +182,38 @@ function App() {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
+        <div className="absolute inset-0 bg-navy opacity-50 z-0 pointer-events-none"></div>
+
         {/* Header */}
-        <header className="h-24 bg-white/80 backdrop-blur-md border-b border-slate-200 flex items-center justify-between px-6 md:px-12 sticky top-0 z-30">
+        <header className="h-24 bg-navy/80 backdrop-blur-2xl border-b border-gold/10 flex items-center justify-between px-8 md:px-16 sticky top-0 z-30">
           {!isSidebarOpen && (
-            <button onClick={() => setIsSidebarOpen(true)} className="p-3 text-slate-500 hover:bg-slate-50 rounded-2xl transition-all">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-3 text-gold/40 hover:text-gold hover:bg-gold/5 rounded-xl transition-all">
               <MenuIcon size={24} />
             </button>
           )}
 
-          <div className="flex-1 flex items-center justify-end md:justify-between gap-8">
-            <div className="hidden md:flex items-center flex-1 max-w-md bg-slate-100/50 px-5 py-3 rounded-2xl border border-slate-200 group focus-within:ring-4 focus-within:ring-brand-500/10 focus-within:bg-white focus-within:border-brand-500 transition-all duration-300">
-              <Search className="w-5 h-5 text-slate-400 group-focus-within:text-brand-500" />
+          <div className="flex-1 flex items-center justify-end md:justify-between gap-12">
+            <div className="hidden md:flex items-center flex-1 max-w-lg bg-navy-deep/50 px-6 py-3.5 rounded-xl border border-gold/10 group focus-within:ring-4 focus-within:ring-gold/5 focus-within:bg-navy-deep focus-within:border-gold/30 transition-all duration-500">
+              <Search className="w-5 h-5 text-gold/30 group-focus-within:text-gold transition-colors" />
               <input
                 type="text"
-                placeholder="Search resources, students, or reports..."
-                className="bg-transparent border-none outline-none text-sm w-full ml-3 font-medium placeholder:text-slate-400"
+                placeholder="Query system registry, students, or intelligence..."
+                className="bg-transparent border-none outline-none text-sm w-full ml-4 font-light text-cream placeholder:text-slate-600 tracking-wide"
               />
-              <span className="text-[10px] font-bold text-slate-400 bg-white px-2 py-1 rounded-lg border border-slate-200 shadow-sm">⌘K</span>
+              <span className="text-[9px] font-mono font-bold text-gold/30 bg-navy/50 px-2 py-1.5 rounded-lg border border-gold/10 shadow-sm ml-2">HEX_MODIFIED</span>
             </div>
 
-            <div className="flex items-center gap-4">
-              <button className="p-3 text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-2xl transition-all relative group">
-                <Bell size={22} />
-                <span className="absolute top-3.5 right-3.5 w-2 h-2 bg-brand-500 rounded-full border-2 border-white ring-4 ring-brand-500/20"></span>
+            <div className="flex items-center gap-6">
+              <button className="p-3 text-gold/30 hover:text-gold hover:bg-gold/5 rounded-xl transition-all relative group">
+                <Bell size={22} className="group-hover:animate-pulse" />
+                <span className="absolute top-3.5 right-3.5 w-2 h-2 bg-gold bright rounded-full border-2 border-navy ring-4 ring-gold/10"></span>
               </button>
 
               <div className="hidden sm:flex flex-col items-end">
-                <span className="text-xs font-black text-slate-900 uppercase tracking-tighter leading-none">Management Center</span>
-                <span className="text-[10px] font-bold text-green-500 uppercase flex items-center gap-1 mt-1">
-                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                  Connected
+                <span className="text-[10px] font-mono font-black text-white uppercase tracking-[0.2em] leading-none mb-1.5">Sovereign Cortex</span>
+                <span className="text-[10px] font-mono font-bold text-teal-bright uppercase flex items-center gap-2 mt-0.5">
+                  <span className="w-1.5 h-1.5 bg-teal-bright rounded-full animate-pulse"></span>
+                  Node Secure
                 </span>
               </div>
             </div>
@@ -178,24 +221,24 @@ function App() {
         </header>
 
         {/* Dynamic Content */}
-        <section className="flex-1 overflow-y-auto custom-scrollbar bg-[#F8FAFC]">
+        <section className="flex-1 overflow-y-auto custom-scrollbar bg-navy relative z-10">
           {renderContent()}
         </section>
 
         {/* Notification Toast Section */}
-        <div className="fixed bottom-8 right-8 flex flex-col gap-3 z-50">
+        <div className="fixed bottom-10 right-10 flex flex-col gap-4 z-50">
           {notifications.map(n => (
             <div
               key={n.id}
               className={`
-                px-6 py-4 rounded-3xl shadow-2xl border flex items-center gap-4 animate-slide-up
-                ${n.type === 'error' ? 'bg-white border-red-100 text-red-800' :
-                  n.type === 'success' ? 'bg-white border-green-100 text-green-800' :
-                    'bg-white border-slate-100 text-slate-800 shadow-slate-200/50'}
+                px-8 py-5 rounded-2xl shadow-gold border backdrop-blur-2xl flex items-center gap-5 animate-slide-up
+                ${n.type === 'error' ? 'bg-navy-lighter/90 border-red-500/20 text-red-200' :
+                  n.type === 'success' ? 'bg-navy-lighter/90 border-teal-bright/20 text-teal-bright shadow-teal/10' :
+                    'bg-navy-lighter/90 border-gold/20 text-gold-soft shadow-gold/10'}
               `}
             >
-              <div className={`w-1.5 h-6 rounded-full ${n.type === 'error' ? 'bg-red-500 shadow-lg shadow-red-200' : n.type === 'success' ? 'bg-green-500 shadow-lg shadow-green-200' : 'bg-brand-500 shadow-lg shadow-brand-200'}`}></div>
-              <p className="text-sm font-bold tracking-tight">{n.message}</p>
+              <div className={`w-1 h-8 rounded-full ${n.type === 'error' ? 'bg-red-500' : n.type === 'success' ? 'bg-teal-bright shadow-[0_0_10px_rgba(34,211,238,0.5)]' : 'bg-gold shadow-[0_0_10px_rgba(201,168,76,0.5)]'}`}></div>
+              <p className="text-xs font-mono font-bold tracking-widest uppercase">{n.message}</p>
             </div>
           ))}
         </div>
@@ -206,9 +249,9 @@ function App() {
 
 function LayoutDashboard({ size = 24, className }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
-      <rect x="14" y="14" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" />
     </svg>
   );
 }

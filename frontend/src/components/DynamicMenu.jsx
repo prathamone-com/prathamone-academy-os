@@ -68,9 +68,9 @@ const DynamicMenu = ({ menuCode, onAction, activePath, onNotify }) => {
     };
 
     if (loading) return (
-        <div className="p-6 flex items-center gap-3 text-slate-500 animate-pulse font-medium text-xs uppercase tracking-widest">
-            <Loader2 className="animate-spin w-4 h-4" />
-            Syncing Navigation...
+        <div className="p-10 flex flex-col items-center gap-4 text-gold/30 animate-pulse font-mono text-[10px] uppercase tracking-[0.3em]">
+            <Loader2 className="animate-spin w-6 h-6" />
+            Initializing Neural Links...
         </div>
     );
 
@@ -82,33 +82,36 @@ const DynamicMenu = ({ menuCode, onAction, activePath, onNotify }) => {
         const isActive = activePath === item.route_path;
 
         if (item.action_type === 'DIVIDER') {
-            return <div key={item.item_id} className="mx-6 my-4 border-t border-slate-800/50" />;
+            return <div key={item.item_id} className="mx-8 my-6 border-t border-gold/5" />;
         }
 
         return (
-            <div key={item.item_id} className="select-none mb-1">
+            <div key={item.item_id} className="select-none mb-1.5 px-2">
                 <div
                     onClick={() => isGroup ? toggleGroup(item.item_id) : onAction(item)}
                     className={`
-                        group flex items-center gap-3 px-6 py-3.5 rounded-2xl cursor-pointer transition-all duration-300
+                        group flex items-center gap-4 px-6 py-4 rounded-xl cursor-none transition-all duration-500 relative overflow-hidden
                         ${isActive
-                            ? 'bg-brand-600 text-white shadow-lg shadow-brand-500/20 active-glow'
-                            : 'text-slate-400 hover:bg-slate-800 hover:text-white'}
-                        ${depth > 0 ? 'ml-6 py-2.5 opacity-80 hover:opacity-100' : ''}
+                            ? 'bg-gold text-navy shadow-gold active-glow'
+                            : 'text-slate-400 hover:text-gold hover:bg-gold/5'}
+                        ${depth > 0 ? 'ml-8 py-3 opacity-70 hover:opacity-100 scale-95 origin-left' : ''}
                     `}
                 >
-                    <Icon className={`w-5 h-5 transition-transform duration-300 ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
-                    <span className={`flex-1 text-sm font-bold tracking-tight ${isActive ? 'font-black' : ''}`}>
+                    {isActive && (
+                        <div className="absolute inset-x-0 bottom-0 h-0.5 bg-navy/20"></div>
+                    )}
+                    <Icon className={`w-5 h-5 transition-all duration-500 ${isActive ? 'scale-110 rotate-0' : 'group-hover:scale-125 group-hover:rotate-12'}`} />
+                    <span className={`flex-1 text-xs tracking-widest uppercase ${isActive ? 'font-black' : 'font-medium'}`}>
                         {item.label}
                     </span>
                     {isGroup && (
-                        <div className={`transition-transform duration-300 ${isOpen ? 'rotate-90' : ''}`}>
-                            <ChevronRight className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-600'}`} />
+                        <div className={`transition-transform duration-500 ${isOpen ? 'rotate-90' : ''}`}>
+                            <ChevronRight className={`w-3 h-3 ${isActive ? 'text-navy' : 'text-gold/20'}`} />
                         </div>
                     )}
                 </div>
                 {isGroup && isOpen && (
-                    <div className="mt-1 space-y-1 overflow-hidden transition-all duration-500">
+                    <div className="mt-2 space-y-1 animate-slide-up">
                         {item.children.map(child => renderItem(child, depth + 1))}
                     </div>
                 )}

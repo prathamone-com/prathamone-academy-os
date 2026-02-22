@@ -81,11 +81,17 @@ const DynamicForm = ({ formCode, onNotify }) => {
 
         setSubmitting(true);
         try {
-            const entityCode = metadata.form.entity_id; // Mapping form to entity
-            // Note: In real app, we fetch entity_code from entity_master
+            // LAW 2: Transform flat formData into the array shape expected by
+            // EntityCreateRequest: [{ attribute_code, value }, ...]
+            // This keeps the frontend free of schema concerns (attribute_code is
+            // already the key used throughout the EAV form rendering).
+            const attributesPayload = Object.entries(formData).map(([attribute_code, value]) => ({
+                attribute_code,
+                value,
+            }));
             const res = await apiFetch(`/entities/${metadata.form.entity_code}/records`, {
                 method: "POST",
-                body: JSON.stringify({ attributes: formData })
+                body: JSON.stringify({ attributes: attributesPayload })
             });
             onNotify?.("Record created successfully", "success");
             onNotify?.(`Record ID: ${res.record_id}`, "info");
@@ -96,42 +102,53 @@ const DynamicForm = ({ formCode, onNotify }) => {
         }
     };
 
-    if (loading) return <div className="flex items-center gap-2 p-8"><Loader2 className="animate-spin" /> Loading form...</div>;
-    if (error) return <div className="p-4 text-red-600 bg-red-50 border border-red-200 rounded-lg">{error}</div>;
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center p-20 text-gold/30 animate-pulse font-mono text-[10px] uppercase tracking-[0.3em] gap-4">
+            <Loader2 className="animate-spin w-8 h-8" />
+            Initializing Neural Interface...
+        </div>
+    );
+
+    if (error) return (
+        <div className="p-8 text-red-400 bg-red-900/10 border border-red-500/20 rounded-xl font-mono text-xs uppercase tracking-wider">
+            Critical Failure: {error}
+        </div>
+    );
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-10 pb-20">
+        <form onSubmit={handleSubmit} className="space-y-16 pb-32 animate-slide-up">
             {/* Header Section */}
-            <div className="flex flex-col gap-2">
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight">{metadata.form.display_name}</h2>
+            <div className="flex flex-col gap-4 relative">
+                <div className="absolute -left-8 top-0 bottom-0 w-px bg-gradient-to-b from-gold/30 to-transparent"></div>
+                <h2 className="text-4xl font-serif font-black text-white tracking-tight">{metadata.form.display_name}</h2>
                 {metadata.form.description && (
-                    <p className="text-slate-500 font-medium leading-relaxed max-w-2xl">{metadata.form.description}</p>
+                    <p className="text-slate-400 font-light leading-relaxed max-w-3xl italic tracking-wide">{metadata.form.description}</p>
                 )}
             </div>
 
             {/* Dynamic Sections */}
             {metadata.structure.map((section) => (
-                <div key={section.section.section_id} className="premium-card p-8 md:p-10">
-                    <div className="flex items-center gap-3 mb-8 border-b border-slate-50 pb-6">
-                        <div className="w-1.5 h-6 bg-brand-500 rounded-full shadow-lg shadow-brand-500/20"></div>
-                        <h3 className="text-lg font-bold text-slate-800 tracking-tight uppercase tracking-widest text-xs">
+                <div key={section.section.section_id} className="premium-card p-10 md:p-14 bg-navy-lighter/30 backdrop-blur-sm">
+                    <div className="flex items-center gap-5 mb-10 border-b border-gold/5 pb-8 relative">
+                        <div className="w-1.5 h-6 bg-gold rounded-full shadow-gold active-glow absolute -left-[56px] md:-left-[72px]"></div>
+                        <h3 className="text-xs font-mono font-bold text-gold uppercase tracking-[0.3em]">
                             {section.section.display_label}
                         </h3>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
                         {section.fields.map((field) => (
                             checkVisibility(field.visibility_rule) && (
-                                <div key={field.field_id} className={`flex flex-col gap-2 ${field.widget_type === 'textarea' ? 'md:col-span-2' : ''}`}>
+                                <div key={field.field_id} className={`flex flex-col gap-3 ${field.widget_type === 'textarea' ? 'md:col-span-2' : ''}`}>
                                     <div className="flex items-center justify-between">
-                                        <label className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                                        <label className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-[0.15em] flex items-center gap-2">
                                             {field.label_override || field.display_label}
-                                            {field.is_required && <span className="text-brand-500">*</span>}
+                                            {field.is_required && <span className="text-gold animate-pulse text-lg leading-none mt-1">*</span>}
                                         </label>
                                         {field.help_text && (
                                             <div className="group relative">
-                                                <AlertCircle size={14} className="text-slate-300 cursor-help hover:text-brand-500 transition-colors" />
-                                                <div className="absolute bottom-full right-0 mb-2 w-48 p-2 bg-slate-900 text-white text-[10px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 font-medium">
+                                                <AlertCircle size={14} className="text-gold/20 cursor-help hover:text-gold transition-colors" />
+                                                <div className="absolute bottom-full right-0 mb-3 w-56 p-4 bg-navy-deep text-white text-[10px] rounded-xl border border-gold/20 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 font-light leading-relaxed backdrop-blur-xl shadow-gold translate-y-2 group-hover:translate-y-0">
                                                     {field.help_text}
                                                 </div>
                                             </div>
@@ -144,24 +161,24 @@ const DynamicForm = ({ formCode, onNotify }) => {
                                             className="input-standard"
                                             value={formData[field.attribute_code] || ""}
                                             onChange={(e) => handleChange(e, field.attribute_code)}
-                                            placeholder={field.placeholder || "Enter text..."}
+                                            placeholder={field.placeholder || "Null_String..."}
                                         />
                                     )}
 
                                     {field.widget_type === 'number_input' && (
                                         <input
                                             type="number"
-                                            className="input-standard"
+                                            className="input-standard font-mono"
                                             value={formData[field.attribute_code] || ""}
                                             onChange={(e) => handleChange(e, field.attribute_code)}
-                                            placeholder="0"
+                                            placeholder="0x00"
                                         />
                                     )}
 
                                     {field.widget_type === 'date_picker' && (
                                         <input
                                             type="date"
-                                            className="input-standard"
+                                            className="input-standard font-mono"
                                             value={formData[field.attribute_code] || ""}
                                             onChange={(e) => handleChange(e, field.attribute_code)}
                                         />
@@ -169,27 +186,27 @@ const DynamicForm = ({ formCode, onNotify }) => {
 
                                     {field.widget_type === 'textarea' && (
                                         <textarea
-                                            className="input-standard min-h-[140px] resize-none py-4"
+                                            className="input-standard min-h-[160px] resize-none py-5 leading-relaxed font-light"
                                             value={formData[field.attribute_code] || ""}
                                             onChange={(e) => handleChange(e, field.attribute_code)}
-                                            placeholder="Provide detailed description..."
+                                            placeholder="Awaiting comprehensive data input..."
                                         />
                                     )}
 
                                     {field.widget_type === 'checkbox' && (
-                                        <label className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-100 rounded-xl cursor-pointer hover:bg-white hover:border-brand-500/20 transition-all group">
+                                        <label className="flex items-center gap-4 p-5 bg-navy-deep border border-gold/10 rounded-xl cursor-none hover:bg-gold/5 hover:border-gold/30 transition-all group">
                                             <div className="relative flex items-center">
                                                 <input
                                                     type="checkbox"
-                                                    className="peer w-5 h-5 opacity-0 absolute cursor-pointer"
+                                                    className="peer w-6 h-6 opacity-0 absolute cursor-none"
                                                     checked={formData[field.attribute_code] || false}
                                                     onChange={(e) => handleChange(e, field.attribute_code)}
                                                 />
-                                                <div className="w-5 h-5 bg-white border-2 border-slate-200 rounded-lg peer-checked:bg-brand-600 peer-checked:border-brand-600 transition-all flex items-center justify-center">
-                                                    <CheckCircle2 size={12} className="text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                                <div className="w-6 h-6 bg-navy border-2 border-gold/20 rounded-lg peer-checked:bg-gold peer-checked:border-gold transition-all flex items-center justify-center shadow-inner">
+                                                    <CheckCircle2 size={14} className="text-navy opacity-0 peer-checked:opacity-100 transition-all scale-50 peer-checked:scale-100" />
                                                 </div>
                                             </div>
-                                            <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">Yes, confirmed</span>
+                                            <span className="text-xs font-mono font-bold text-slate-500 group-hover:text-gold transition-colors uppercase tracking-widest">Acknowledge & Sync</span>
                                         </label>
                                     )}
                                 </div>
@@ -199,21 +216,21 @@ const DynamicForm = ({ formCode, onNotify }) => {
                 </div>
             ))}
 
-            <div className="fixed bottom-10 left-1/2 -translate-x-1/2 md:translate-x-0 md:static flex justify-end">
+            <div className="fixed bottom-12 left-1/2 -translate-x-1/2 md:translate-x-0 md:static flex justify-end z-[45]">
                 <button
                     type="submit"
                     disabled={submitting}
-                    className="btn-primary min-w-[200px] justify-center px-10 py-4 text-sm shadow-2xl shadow-brand-500/40"
+                    className="btn-primary min-w-[280px] h-16 justify-center text-xs font-mono font-black uppercase tracking-[0.2em] shadow-gold-hover scale-110 md:scale-100"
                 >
                     {submitting ? (
                         <>
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            Processing...
+                            Transmitting...
                         </>
                     ) : (
                         <>
                             <Save className="w-5 h-5" />
-                            Finalize & Save Record
+                            Synchronize Subsystem
                         </>
                     )}
                 </button>

@@ -2,6 +2,12 @@
 -- PRATHAMONE ACADEMY OS — DATABASE SCHEMA
 -- Layers 0 → 3  (Tenant Kernel → Form Rendering Engine)
 -- =============================================================================
+-- Author    : Jawahar R Mallah
+-- Role      : Founder & Technical Architect
+-- Web       : https://aiTDL.com | https://pratham1.com
+-- Version   : Author_Metadata_v1.0
+-- Copyright : © 2026 Jawahar R Mallah. All rights reserved.
+-- =============================================================================
 -- RULES.MD compliance checklist applied to every table:
 --   LAW 1  : All entities registered in entity_master
 --   LAW 2  : No custom columns — variable fields go to attribute_master/values
@@ -487,6 +493,9 @@ COMMENT ON COLUMN form_fields.is_required_override   IS 'When not NULL, override
 -- form_submissions
 -- Tracks each submission event (the "envelope").
 -- Actual field values are stored in attribute_values with record_id = submission_id.
+-- LAW 8:  No mutable state stored here. current_state is REMOVED.
+--         Current state is always derived at runtime from workflow_state_log
+--         via the view v_submission_current_state (see below).
 -- LAW 10: No grade/rank stored here — derived at runtime.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS form_submissions (
@@ -494,7 +503,6 @@ CREATE TABLE IF NOT EXISTS form_submissions (
     submission_id   UUID            NOT NULL DEFAULT gen_random_uuid(),
     form_id         UUID            NOT NULL,
     submitted_by    UUID            NOT NULL,           -- FK → users (resolved by app layer)
-    current_state   TEXT            NOT NULL,           -- Mirrors latest workflow_state_log.to_state
     submitted_at    TIMESTAMPTZ     NOT NULL DEFAULT now(),
     metadata        JSONB,                              -- Supplemental context (device, IP hash, etc.)
 
@@ -504,10 +512,50 @@ CREATE TABLE IF NOT EXISTS form_submissions (
         REFERENCES form_master(tenant_id, form_id) ON DELETE RESTRICT
 );
 
-COMMENT ON TABLE  form_submissions                 IS 'Submission envelope. Actual field answers are in attribute_values (record_id=submission_id).';
-COMMENT ON COLUMN form_submissions.current_state   IS 'Denormalised current workflow state. Authoritative source is workflow_state_log.';
-COMMENT ON COLUMN form_submissions.submitted_by    IS 'User UUID; kept here for fast query. Full auth resolved by app layer.';
-COMMENT ON COLUMN form_submissions.metadata        IS 'Non-answer context: browser info, IP hash, attempt number, etc.';
+COMMENT ON TABLE  form_submissions              IS 'Submission envelope. Actual field answers are in attribute_values (record_id=submission_id). current_state was removed (LAW 8) — use v_submission_current_state.';
+COMMENT ON COLUMN form_submissions.submitted_by IS 'User UUID; kept here for fast query. Full auth resolved by app layer.';
+COMMENT ON COLUMN form_submissions.metadata     IS 'Non-answer context: browser info, IP hash, attempt number, etc.';
+
+
+-- -----------------------------------------------------------------------------
+-- Migration guard: drop current_state if the table already exists with it.
+-- Safe to run on a fresh DB (column won't exist) or on an existing DB.
+-- LAW 8 fix: eliminates the only UPDATE-requiring column in form_submissions.
+-- -----------------------------------------------------------------------------
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE  table_name   = 'form_submissions'
+          AND  column_name  = 'current_state'
+    ) THEN
+        ALTER TABLE form_submissions DROP COLUMN current_state;
+        RAISE NOTICE 'LAW 8 fix: dropped mutable column current_state from form_submissions';
+    END IF;
+END;
+$$;
+
+
+-- -----------------------------------------------------------------------------
+-- v_submission_current_state
+-- Read-only view that derives the current workflow state for each submission
+-- from the INSERT-ONLY workflow_state_log.  No UPDATE ever needed.
+-- LAW 8 compliant: state is always the latest immutable log row.
+-- LAW 3 compliant: no if(status==) checks — derived declaratively.
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE VIEW v_submission_current_state AS
+    SELECT DISTINCT ON (wsl.tenant_id, wsl.record_id)
+        wsl.tenant_id,
+        wsl.record_id   AS submission_id,
+        wsl.to_state    AS current_state,
+        wsl.transition_at AS state_entered_at
+    FROM   workflow_state_log wsl
+    ORDER  BY wsl.tenant_id, wsl.record_id, wsl.transition_at DESC;
+
+COMMENT ON VIEW v_submission_current_state IS
+    'LAW 8: Derives current workflow state from the INSERT-ONLY workflow_state_log. '
+    'Replaces the removed mutable column form_submissions.current_state. '
+    'Join on (tenant_id, submission_id) to get current_state.';
 
 
 -- -----------------------------------------------------------------------------

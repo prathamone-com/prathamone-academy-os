@@ -65,54 +65,65 @@ const ReportViewer = ({ reportCode, onNotify }) => {
         setFilters(prev => ({ ...prev, [code]: value }));
     };
 
-    if (loading) return <div className="flex items-center gap-2 p-8"><Loader2 className="animate-spin" /> Fetching report schema...</div>;
-    if (error) return <div className="p-4 text-red-600 bg-red-50 border border-red-200 rounded-lg">{error}</div>;
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center p-20 text-gold/30 animate-pulse font-mono text-[10px] uppercase tracking-[0.3em] gap-4">
+            <Loader2 className="animate-spin w-8 h-8" />
+            Querying Matrix Ledger...
+        </div>
+    );
 
-    const canExport = metadata?.report?.is_exportable; // In real app, check role access too
+    if (error) return (
+        <div className="p-8 text-red-400 bg-red-900/10 border border-red-500/20 rounded-xl font-mono text-xs uppercase tracking-wider">
+            Critical Failure: {error}
+        </div>
+    );
+
+    const canExport = metadata?.report?.is_exportable;
 
     return (
-        <div className="space-y-8 animate-slide-up">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
-                <div>
-                    <h2 className="text-3xl font-black text-slate-900 tracking-tight">{metadata.report.label}</h2>
-                    <p className="text-slate-500 font-medium mt-1">{metadata.report.description}</p>
+        <div className="space-y-12 animate-slide-up">
+            <div className="flex flex-col md:flex-row justify-between items-start gap-6">
+                <div className="relative">
+                    <div className="absolute -left-8 top-0 bottom-0 w-px bg-gradient-to-b from-gold/30 to-transparent"></div>
+                    <h2 className="text-4xl font-serif font-black text-white tracking-tight">{metadata.report.label}</h2>
+                    <p className="text-slate-400 font-light mt-2 italic tracking-wide">{metadata.report.description}</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-4">
                     {canExport && (
                         <button
                             onClick={() => runReport(true)}
-                            className="flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm active:scale-95"
+                            className="btn-outline py-3 text-[10px] tracking-[0.2em]"
                         >
-                            <Download size={16} /> EXPORT CSV
+                            <Download size={14} /> EXPORT_DATA
                         </button>
                     )}
                     <button
                         disabled={running}
                         onClick={() => runReport()}
-                        className="btn-primary py-2.5 text-xs tracking-widest"
+                        className="btn-primary py-3 text-[10px] tracking-[0.2em]"
                     >
-                        {running ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
-                        REFRESH DATA
+                        {running ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                        SYNC_ENGINE
                     </button>
                 </div>
             </div>
 
             {/* Filters Section */}
             {metadata.filters.length > 0 && (
-                <div className="premium-card p-6 md:p-8 bg-slate-50/50">
-                    <div className="flex items-center gap-2 mb-6">
-                        <Filter size={14} className="text-brand-500" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Query Parameters</span>
+                <div className="premium-card p-8 md:p-10 bg-navy-lighter/20 backdrop-blur-sm">
+                    <div className="flex items-center gap-3 mb-8">
+                        <Filter size={14} className="text-gold" />
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-[0.3em] text-gold/40">Query Parameters</span>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
                         {metadata.filters.map(f => (
-                            <div key={f.filter_id} className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
+                            <div key={f.filter_id} className="space-y-3">
+                                <label className="text-[9px] font-mono font-bold text-slate-500 uppercase tracking-widest">
                                     {f.display_label}
                                 </label>
                                 <input
                                     type="text"
-                                    className="input-standard py-2.5 text-xs"
+                                    className="input-standard py-3 text-xs font-mono"
                                     value={filters[f.attribute_code] || ""}
                                     onChange={(e) => handleFilterChange(f.attribute_code, e.target.value)}
                                     placeholder={`Filter ${f.display_label.toLowerCase()}...`}
@@ -125,24 +136,24 @@ const ReportViewer = ({ reportCode, onNotify }) => {
 
             {/* Results Table */}
             {results ? (
-                <div className="premium-card overflow-hidden">
+                <div className="premium-card overflow-hidden bg-navy-lighter/10">
                     <div className="overflow-x-auto custom-scrollbar">
                         <table className="w-full text-left border-collapse">
                             <thead>
-                                <tr className="bg-slate-900 border-b border-slate-800">
+                                <tr className="bg-navy-deep/80 border-b border-gold/10">
                                     {results.columns.map(col => (
-                                        <th key={col} className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">
+                                        <th key={col} className="px-10 py-6 text-[10px] font-mono font-bold text-gold uppercase tracking-[0.3em] whitespace-nowrap">
                                             {col.replace(/_/g, ' ')}
                                         </th>
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-gold/5">
                                 {results.rows.length > 0 ? (
                                     results.rows.map((row, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50/80 transition-colors group">
+                                        <tr key={idx} className="hover:bg-gold/5 transition-all duration-300 group">
                                             {results.columns.map(col => (
-                                                <td key={col} className="px-8 py-5 text-sm font-semibold text-slate-600 group-hover:text-slate-900">
+                                                <td key={col} className="px-10 py-6 text-sm font-light text-cream group-hover:text-white transition-colors">
                                                     {row[col]?.toString() || '-'}
                                                 </td>
                                             ))}
@@ -150,12 +161,12 @@ const ReportViewer = ({ reportCode, onNotify }) => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={results.columns.length} className="px-8 py-20 text-center">
-                                            <div className="flex flex-col items-center gap-3">
-                                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
-                                                    <AlertCircle size={32} />
+                                        <td colSpan={results.columns.length} className="px-10 py-32 text-center">
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="w-20 h-20 bg-navy-deep rounded-full border border-gold/10 flex items-center justify-center text-gold/20 shadow-inner">
+                                                    <AlertCircle size={40} />
                                                 </div>
-                                                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">No matching records found</p>
+                                                <p className="text-gold/40 font-mono font-bold uppercase tracking-[0.2em] text-xs">No matching nodes located</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -163,23 +174,29 @@ const ReportViewer = ({ reportCode, onNotify }) => {
                             </tbody>
                         </table>
                     </div>
-                    <div className="px-8 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        <div className="flex gap-6">
-                            <span>RECORDS: {results.row_count}</span>
-                            <span>STATUS: LIVE_OPTIMIZED</span>
+                    <div className="px-10 py-5 bg-navy-deep border-t border-gold/10 flex justify-between items-center text-[9px] font-mono font-bold text-gold/40 uppercase tracking-[0.3em]">
+                        <div className="flex gap-10">
+                            <span className="flex items-center gap-2">
+                                <span className="w-1 h-1 bg-gold rounded-full"></span>
+                                NODES: {results.row_count}
+                            </span>
+                            <span className="flex items-center gap-2">
+                                <span className="w-1 h-1 bg-teal-bright rounded-full"></span>
+                                STATUS: SECURE_HASH
+                            </span>
                         </div>
-                        <span className="opacity-50">TXID: {results.execution_id.split('-')[0]}</span>
+                        <span className="opacity-50">TRACE_ID: {results.execution_id.split('-')[0]}</span>
                     </div>
                 </div>
             ) : (
                 !running && (
-                    <div className="py-32 premium-card flex flex-col items-center justify-center bg-white/50 border-dashed border-2 border-slate-200">
-                        <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center text-slate-300 mb-6 shadow-inner">
-                            <Table size={40} />
+                    <div className="py-40 premium-card flex flex-col items-center justify-center bg-navy-lighter/10 border-dashed border border-gold/10">
+                        <div className="w-24 h-24 bg-navy-deep border border-gold/5 rounded-3xl flex items-center justify-center text-gold/10 mb-8 shadow-gold-hover transition-all">
+                            <Table size={48} />
                         </div>
-                        <h3 className="text-lg font-bold text-slate-900 mb-2 tracking-tight">Report Canvas Ready</h3>
-                        <p className="text-slate-400 font-medium max-w-xs text-center text-sm leading-relaxed">
-                            Configure your query filters above and click "Run Report" to generate data insights.
+                        <h3 className="text-2xl font-serif font-bold text-white mb-3 tracking-tight">Intelligence Canvas</h3>
+                        <p className="text-slate-400 font-light max-w-sm text-center text-sm leading-relaxed tracking-wide italic">
+                            Configure your query parameters above and synchronize the subsystem to generate actionable data insights.
                         </p>
                     </div>
                 )

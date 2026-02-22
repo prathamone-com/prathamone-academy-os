@@ -1,6 +1,15 @@
 """
 main.py — FastAPI application entry point.
 
+PrathamOne Academy OS — Kernel API Server
+==========================================
+Author    : Jawahar R Mallah
+Role      : Founder & Technical Architect
+Web       : https://aiTDL.com | https://pratham1.com
+Version   : Author_Metadata_v1.0
+Copyright : © 2026 Jawahar R Mallah. All rights reserved.
+----------------------------------------------------------
+
 RULES.md compliance:
   LAW 7 : tenant_id is NEVER accepted from the client. It is extracted only
            from the signed JWT in middleware/tenant.py and stored in

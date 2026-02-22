@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrathamOne Academy OS — The Sovereign Education Operating System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=DM+Sans:ital,wght@0,200;0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:     #080E1A;
+  --navy2:    #0D1B2A;
+  --navy3:    #122338;
+  --gold:     #C9A84C;
+  --gold2:    #E8C96A;
+  --gold3:    #F5E0A0;
+  --teal:     #0E7490;
+  --teal2:    #22D3EE;
+  --cream:    #F8F3E8;
+  --white:    #FFFFFF;
+  --gray:     #94A3B8;
+  --red:      #C0392B;
+  --green:    #1A5E3A;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--navy);
+  color: var(--cream);
+  font-family: 'DM Sans', sans-serif;
+  font-weight: 300;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ── CURSOR ─────────────────────────────────────────── */
+.cursor {
+  position: fixed; width: 12px; height: 12px;
+  background: var(--gold); border-radius: 50%;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: transform 0.1s, opacity 0.2s;
+  mix-blend-mode: difference;
+}
+.cursor-ring {
+  position: fixed; width: 36px; height: 36px;
+  border: 1px solid rgba(201,168,76,0.5); border-radius: 50%;
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%);
+  transition: transform 0.35s cubic-bezier(.25,.46,.45,.94), width 0.3s, height 0.3s;
+}
+body:hover .cursor { opacity: 1; }
+
+/* ── NOISE OVERLAY ──────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9990; opacity: 0.4;
+}
+
+/* ── NAV ────────────────────────────────────────────── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 100; padding: 0 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 72px;
+  border-bottom: 1px solid rgba(201,168,76,0.08);
+  background: rgba(8,14,26,0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 12px;
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem; font-weight: 700; color: var(--white);
+  text-decoration: none;
+}
+.nav-logo-mark {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--gold), var(--teal));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; font-weight: 900;
+  font-size: 1rem; color: var(--navy);
+}
+.nav-links {
+  display: flex; gap: 2.5rem; list-style: none;
+}
+.nav-links a {
+  color: var(--gray); font-size: 0.82rem; font-weight: 400;
+  letter-spacing: 0.08em; text-decoration: none; text-transform: uppercase;
+  transition: color 0.25s;
+}
+.nav-links a:hover { color: var(--gold); }
+.nav-cta {
+  background: transparent;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  padding: 9px 24px; border-radius: 4px;
+  font-family: 'DM Sans', sans-serif; font-size: 0.8rem;
+  font-weight: 500; letter-spacing: 0.05em;
+  cursor: none; text-transform: uppercase;
+  transition: background 0.3s, color 0.3s;
+  text-decoration: none;
+}
+.nav-cta:hover { background: var(--gold); color: var(--navy); }
+
+/* ── HERO ───────────────────────────────────────────── */
+.hero {
+  min-height: 100vh;
+  display: grid; place-items: center;
+  padding: 120px 5% 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Radial glow */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -30%; left: 50%;
+  transform: translateX(-50%);
+  width: 900px; height: 900px;
+  background: radial-gradient(ellipse at center,
+    rgba(14,116,144,0.12) 0%,
+    rgba(201,168,76,0.06) 40%,
+    transparent 70%);
+  pointer-events: none;
+}
+
+/* Grid lines */
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,168,76,0.04) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 40%, transparent 100%);
+}
+
+.hero-content {
+  text-align: center; position: relative; z-index: 2;
+  max-width: 960px; margin: 0 auto;
+}
+
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 100px; padding: 6px 16px;
+  margin-bottom: 3rem;
+  font-size: 0.72rem; font-weight: 400; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--gold);
+  background: rgba(201,168,76,0.05);
+  opacity: 0; animation: fadeUp 0.8s 0.1s forwards;
+}
+.hero-badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--gold); animation: pulse 2s infinite;
+}
+
+.hero-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem; font-weight: 300;
+  letter-spacing: 0.2em; color: var(--teal2);
+  text-transform: uppercase; margin-bottom: 1.2rem;
+  opacity: 0; animation: fadeUp 0.8s 0.2s forwards;
+}
+
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(3rem, 7vw, 6.5rem);
+  font-weight: 900; line-height: 1.02;
+  color: var(--white); margin-bottom: 0.4rem;
+  opacity: 0; animation: fadeUp 0.9s 0.3s forwards;
+}
+.hero-title em {
+  font-style: italic; color: var(--gold);
+  background: linear-gradient(135deg, var(--gold), var(--gold2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-subtitle-line {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.5rem, 3vw, 2.6rem);
+  font-weight: 400; font-style: italic;
+  color: rgba(248,243,232,0.55);
+  margin-bottom: 2.5rem;
+  opacity: 0; animation: fadeUp 0.9s 0.4s forwards;
+}
+
+.hero-desc {
+  font-size: 1.05rem; line-height: 1.75;
+  color: var(--gray); max-width: 640px; margin: 0 auto 3rem;
+  font-weight: 300;
+  opacity: 0; animation: fadeUp 0.9s 0.5s forwards;
+}
+.hero-desc strong { color: var(--cream); font-weight: 400; }
+
+.hero-actions {
+  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+  margin-bottom: 5rem;
+  opacity: 0; animation: fadeUp 0.9s 0.65s forwards;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--gold), #9A7B3A);
+  color: var(--navy); padding: 16px 40px; border-radius: 4px;
+  font-family: 'DM Sans', sans-serif; font-weight: 500;
+  font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase;
+  text-decoration: none; border: none; cursor: none;
+  box-shadow: 0 0 40px rgba(201,168,76,0.25);
+  transition: transform 0.25s, box-shadow 0.25s;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 60px rgba(201,168,76,0.4);
+}
+.btn-outline {
+  background: transparent;
+  border: 1px solid rgba(201,168,76,0.35);
+  color: var(--cream); padding: 16px 40px; border-radius: 4px;
+  font-family: 'DM Sans', sans-serif; font-weight: 300;
+  font-size: 0.9rem; letter-spacing: 0.05em; text-transform: uppercase;
+  text-decoration: none; cursor: none;
+  transition: border-color 0.25s, color 0.25s;
+}
+.btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+/* Hero stats */
+.hero-stats {
+  display: flex; gap: 3rem; justify-content: center; flex-wrap: wrap;
+  opacity: 0; animation: fadeUp 0.9s 0.8s forwards;
+}
+.stat {
+  text-align: center;
+}
+.stat-number {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.4rem; font-weight: 700; color: var(--gold);
+  display: block; line-height: 1;
+}
+.stat-label {
+  font-size: 0.72rem; letter-spacing: 0.12em; color: var(--gray);
+  text-transform: uppercase; margin-top: 6px; display: block;
+}
+
+/* Scroll indicator */
+.scroll-hint {
+  position: absolute; bottom: 2.5rem; left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  opacity: 0; animation: fadeIn 1s 1.5s forwards;
+}
+.scroll-hint span {
+  font-size: 0.65rem; letter-spacing: 0.2em; color: var(--gray);
+  text-transform: uppercase;
+}
+.scroll-line {
+  width: 1px; height: 48px;
+  background: linear-gradient(to bottom, var(--gold), transparent);
+  animation: scrollDrop 2s 2s infinite;
+}
+
+/* ── MARQUEE ────────────────────────────────────────── */
+.marquee-wrap {
+  border-top: 1px solid rgba(201,168,76,0.1);
+  border-bottom: 1px solid rgba(201,168,76,0.1);
+  background: rgba(201,168,76,0.03);
+  padding: 18px 0; overflow: hidden;
+}
+.marquee-track {
+  display: flex; gap: 3rem;
+  animation: marquee 28s linear infinite;
+  width: max-content;
+}
+.marquee-item {
+  display: flex; align-items: center; gap: 12px;
+  white-space: nowrap; font-size: 0.75rem;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: rgba(201,168,76,0.6); font-weight: 400;
+}
+.marquee-dot { color: var(--teal2); font-size: 0.5rem; }
+
+/* ── SECTION COMMONS ────────────────────────────────── */
+section { padding: 120px 5%; }
+
+.section-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem; font-weight: 400;
+  letter-spacing: 0.2em; color: var(--teal2);
+  text-transform: uppercase; margin-bottom: 1.2rem;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  font-weight: 700; line-height: 1.12;
+  color: var(--white);
+}
+.section-title em {
+  font-style: italic; color: var(--gold);
+}
+.section-body {
+  font-size: 1rem; line-height: 1.8;
+  color: var(--gray); font-weight: 300;
+  max-width: 52ch;
+}
+
+/* ── OS LAYERS ──────────────────────────────────────── */
+#architecture {
+  background: var(--navy2);
+  position: relative;
+}
+#architecture::before {
+  content: '';
+  position: absolute; right: 0; top: 0; bottom: 0; width: 45%;
+  background: linear-gradient(to right, transparent, rgba(14,116,144,0.04));
+  pointer-events: none;
+}
+
+.arch-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+  align-items: start;
+}
+.arch-left { position: sticky; top: 120px; }
+.arch-desc { color: var(--gray); line-height: 1.75; margin-top: 1.5rem; font-size: 0.95rem; }
+.arch-law {
+  margin-top: 2.5rem;
+  border-left: 3px solid var(--gold);
+  padding: 1rem 1.5rem;
+  background: rgba(201,168,76,0.04);
+  border-radius: 0 4px 4px 0;
+}
+.arch-law p {
+  font-family: 'Playfair Display', serif;
+  font-style: italic; font-size: 0.95rem;
+  color: var(--cream); line-height: 1.6;
+}
+
+.layers-list { display: flex; flex-direction: column; gap: 0; }
+
+.layer-card {
+  border: 1px solid rgba(201,168,76,0.07);
+  border-radius: 8px; padding: 1.6rem 1.8rem;
+  margin-bottom: 1rem;
+  background: rgba(13,27,42,0.6);
+  backdrop-filter: blur(4px);
+  position: relative; overflow: hidden;
+  transition: border-color 0.3s, transform 0.3s, background 0.3s;
+  cursor: none;
+}
+.layer-card:hover {
+  border-color: rgba(201,168,76,0.25);
+  transform: translateX(8px);
+  background: rgba(13,27,42,0.9);
+}
+.layer-card::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: linear-gradient(to bottom, var(--gold), var(--teal));
+  opacity: 0; transition: opacity 0.3s;
+}
+.layer-card:hover::before { opacity: 1; }
+
+.layer-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem; color: var(--teal2);
+  letter-spacing: 0.15em; margin-bottom: 0.5rem; display: block;
+}
+.layer-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.05rem; font-weight: 700;
+  color: var(--white); margin-bottom: 0.4rem;
+}
+.layer-desc {
+  font-size: 0.85rem; color: var(--gray);
+  line-height: 1.5; font-weight: 300;
+}
+.layer-tag {
+  display: inline-block; margin-top: 0.6rem;
+  background: rgba(14,116,144,0.12);
+  border: 1px solid rgba(14,116,144,0.2);
+  color: var(--teal2); font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem; padding: 2px 8px; border-radius: 2px;
+  letter-spacing: 0.1em;
+}
+
+/* ── MODULES ────────────────────────────────────────── */
+#modules { background: var(--navy); }
+.modules-inner { max-width: 1200px; margin: 0 auto; }
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem; margin-top: 4rem;
+}
+.module-card {
+  background: rgba(13,27,42,0.7);
+  border: 1px solid rgba(201,168,76,0.08);
+  border-radius: 12px; padding: 2.2rem;
+  position: relative; overflow: hidden;
+  transition: transform 0.35s, border-color 0.35s;
+  cursor: none;
+}
+.module-card:hover { transform: translateY(-6px); border-color: rgba(201,168,76,0.22); }
+.module-card::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--gold), var(--teal));
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 0.4s;
+}
+.module-card:hover::after { transform: scaleX(1); }
+.module-icon {
+  width: 48px; height: 48px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1.4rem; font-size: 1.5rem;
+}
+.module-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.2rem; font-weight: 700;
+  color: var(--white); margin-bottom: 0.6rem;
+}
+.module-desc { font-size: 0.88rem; color: var(--gray); line-height: 1.65; }
+.module-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.2rem; }
+.module-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.62rem;
+  padding: 3px 8px; border-radius: 2px; letter-spacing: 0.08em;
+  background: rgba(201,168,76,0.08); color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.15);
+}
+
+/* ── FORENSIC DEMO ──────────────────────────────────── */
+#forensics {
+  background: var(--navy2);
+}
+.forensics-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+}
+.forensic-terminal {
+  background: #0A0F1C;
+  border: 1px solid rgba(34,211,238,0.15);
+  border-radius: 12px; overflow: hidden;
+  box-shadow: 0 0 80px rgba(14,116,144,0.12);
+}
+.terminal-bar {
+  background: #11192A; padding: 14px 18px;
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid rgba(34,211,238,0.08);
+}
+.terminal-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+}
+.terminal-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem; color: rgba(148,163,184,0.6);
+  letter-spacing: 0.1em; margin-left: 8px;
+}
+.terminal-body { padding: 1.5rem; }
+.t-line {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem; line-height: 1.8;
+  margin-bottom: 2px;
+}
+.t-comment { color: #4A6080; }
+.t-key { color: #7DD3FC; }
+.t-val { color: #86EFAC; }
+.t-str { color: #FCD34D; }
+.t-dim { color: rgba(148,163,184,0.5); }
+.t-red { color: #FC6A6A; }
+.t-gold { color: var(--gold2); }
+.t-blank { margin-bottom: 10px; }
+
+.forensic-right {}
+.forensic-steps { margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem; }
+.fstep {
+  display: flex; gap: 1.2rem;
+  padding: 1.2rem; border-radius: 8px;
+  border: 1px solid rgba(201,168,76,0.07);
+  background: rgba(8,14,26,0.4);
+  transition: border-color 0.3s;
+}
+.fstep:hover { border-color: rgba(201,168,76,0.2); }
+.fstep-num {
+  width: 32px; height: 32px; min-width: 32px; border-radius: 50%;
+  background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.25);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Playfair Display', serif; font-size: 0.85rem;
+  color: var(--gold); font-weight: 700;
+}
+.fstep-content {}
+.fstep-title { font-size: 0.9rem; font-weight: 500; color: var(--cream); margin-bottom: 4px; }
+.fstep-desc { font-size: 0.8rem; color: var(--gray); line-height: 1.5; }
+
+/* ── SCALE SECTION ──────────────────────────────────── */
+#scale { background: var(--navy); }
+.scale-inner { max-width: 1200px; margin: 0 auto; }
+.scale-metrics {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5px; margin-top: 4rem;
+  border: 1px solid rgba(201,168,76,0.1);
+  border-radius: 12px; overflow: hidden;
+}
+.metric-cell {
+  background: rgba(13,27,42,0.6);
+  padding: 2.2rem; position: relative;
+  transition: background 0.3s;
+}
+.metric-cell:hover { background: rgba(13,27,42,0.95); }
+.metric-cell + .metric-cell {
+  border-left: 1px solid rgba(201,168,76,0.08);
+}
+.metric-value {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.6rem; font-weight: 900;
+  color: var(--gold); line-height: 1;
+  margin-bottom: 0.5rem;
+}
+.metric-unit { font-size: 1.2rem; font-weight: 400; color: var(--gold2); }
+.metric-label { font-size: 0.8rem; color: var(--gray); letter-spacing: 0.06em; }
+.metric-sub { font-size: 0.72rem; color: rgba(148,163,184,0.5); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+
+.perf-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem; margin-top: 3rem;
+}
+.perf-item {
+  padding: 1.5rem; border-radius: 8px;
+  border: 1px solid rgba(201,168,76,0.07);
+  background: rgba(13,27,42,0.4);
+}
+.perf-op { font-size: 0.82rem; color: var(--gray); margin-bottom: 0.8rem; }
+.perf-bar-wrap {
+  height: 4px; background: rgba(255,255,255,0.06);
+  border-radius: 2px; overflow: hidden; margin-bottom: 0.5rem;
+}
+.perf-bar {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--teal), var(--teal2));
+  animation: barGrow 1.5s ease-out forwards;
+  transform-origin: left;
+}
+.perf-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem; color: var(--teal2);
+}
+
+/* ── AI SECTION ─────────────────────────────────────── */
+#ai { background: var(--navy2); }
+.ai-inner { max-width: 1200px; margin: 0 auto; }
+.ai-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+  align-items: center; margin-top: 3rem;
+}
+.ai-visual {
+  position: relative;
+}
+.ai-hub {
+  width: 180px; height: 180px; border-radius: 50%;
+  border: 1px solid rgba(201,168,76,0.2);
+  background: rgba(13,27,42,0.8);
+  display: flex; align-items: center; justify-content: center;
+  margin: 60px auto; position: relative;
+  box-shadow: 0 0 80px rgba(201,168,76,0.08);
+}
+.ai-hub-inner {
+  width: 100px; height: 100px; border-radius: 50%;
+  background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(14,116,144,0.15));
+  border: 1px solid rgba(201,168,76,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.5rem;
+  animation: hubPulse 3s infinite;
+}
+.ai-orbit {
+  position: absolute; border: 1px dashed rgba(201,168,76,0.1);
+  border-radius: 50%;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+}
+.ai-orbit-1 { width: 260px; height: 260px; animation: spin 20s linear infinite; }
+.ai-orbit-2 { width: 340px; height: 340px; animation: spin 30s linear infinite reverse; }
+.ai-satellite {
+  position: absolute; width: 36px; height: 36px;
+  border-radius: 50%; border: 1px solid rgba(14,116,144,0.3);
+  background: rgba(14,116,144,0.12);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem;
+}
+.sat-1 { top: -18px; left: 50%; transform: translateX(-50%); }
+.sat-2 { bottom: -18px; left: 50%; transform: translateX(-50%); }
+.sat-3 { left: -18px; top: 50%; transform: translateY(-50%); }
+.sat-4 { right: -18px; top: 50%; transform: translateY(-50%); }
+.sat-5 { top: -18px; left: 50%; transform: translateX(-50%); }
+.sat-6 { bottom: -18px; left: 50%; transform: translateX(-50%); }
+
+.ai-principles { display: flex; flex-direction: column; gap: 1.2rem; }
+.ai-principle {
+  display: flex; gap: 1rem; align-items: flex-start;
+  padding: 1.2rem; border-radius: 8px;
+  border: 1px solid rgba(201,168,76,0.07);
+  background: rgba(8,14,26,0.5);
+}
+.ai-icon {
+  min-width: 40px; height: 40px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+}
+.ai-principle-title { font-size: 0.9rem; font-weight: 500; color: var(--cream); margin-bottom: 4px; }
+.ai-principle-desc { font-size: 0.8rem; color: var(--gray); line-height: 1.5; }
+
+/* ── GOVERNANCE ─────────────────────────────────────── */
+#governance { background: var(--navy); }
+.gov-inner { max-width: 1200px; margin: 0 auto; }
+.gov-tiers {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; margin-top: 3rem;
+  background: rgba(201,168,76,0.06);
+  border-radius: 12px; overflow: hidden;
+  border: 1px solid rgba(201,168,76,0.1);
+}
+.tier {
+  padding: 2rem 1.5rem;
+  background: rgba(8,14,26,0.9);
+  position: relative; overflow: hidden;
+  transition: background 0.3s;
+}
+.tier:hover { background: rgba(13,27,42,0.9); }
+.tier-badge {
+  display: inline-block; width: 12px; height: 12px;
+  border-radius: 50%; margin-bottom: 1rem;
+}
+.tier-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--gray);
+  margin-bottom: 0.4rem; display: block;
+}
+.tier-title { font-size: 0.9rem; font-weight: 500; color: var(--white); margin-bottom: 0.6rem; }
+.tier-desc { font-size: 0.78rem; color: var(--gray); line-height: 1.55; margin-bottom: 0.8rem; }
+.tier-approval {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  color: rgba(201,168,76,0.7); letter-spacing: 0.05em;
+}
+
+/* ASC section */
+.asc-box {
+  margin-top: 4rem; padding: 3rem;
+  border: 1px solid rgba(201,168,76,0.12);
+  border-radius: 12px;
+  background: rgba(13,27,42,0.4);
+  display: grid; grid-template-columns: 1fr 2fr; gap: 3rem;
+}
+.asc-domains { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; margin-top: 1rem; }
+.asc-domain {
+  padding: 1rem; border-radius: 6px;
+  border: 1px solid rgba(14,116,144,0.15);
+  background: rgba(14,116,144,0.05);
+  font-size: 0.8rem; color: var(--gray);
+}
+.asc-domain strong { color: var(--teal2); font-size: 0.72rem; display: block; margin-bottom: 4px; font-weight: 500; }
+
+/* ── TESTIMONIAL / LAW BLOCK ────────────────────────── */
+#doctrine {
+  background: var(--navy2);
+  text-align: center; padding: 100px 5%;
+}
+.doctrine-inner { max-width: 800px; margin: 0 auto; }
+.doctrine-quote {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(1.6rem, 3.5vw, 2.8rem);
+  font-weight: 400; font-style: italic;
+  color: var(--white); line-height: 1.4;
+  margin: 2rem 0;
+  position: relative;
+}
+.doctrine-quote::before {
+  content: '"';
+  font-size: 8rem; color: rgba(201,168,76,0.06);
+  position: absolute; top: -2rem; left: -2rem;
+  font-family: 'Playfair Display', serif;
+  line-height: 1;
+}
+.doctrine-attr {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem; letter-spacing: 0.2em;
+  color: var(--gold); text-transform: uppercase;
+}
+.doctrine-laws { display: flex; flex-direction: column; gap: 1rem; margin-top: 3rem; text-align: left; }
+.doctrine-law {
+  display: flex; gap: 1rem; align-items: flex-start;
+  padding: 1.2rem 1.5rem; border-radius: 6px;
+  border-left: 3px solid var(--gold);
+  background: rgba(201,168,76,0.04);
+}
+.law-num {
+  font-family: 'Playfair Display', serif; font-size: 1.4rem;
+  font-weight: 900; color: rgba(201,168,76,0.3);
+  min-width: 24px; line-height: 1.4;
+}
+.law-text { font-size: 0.9rem; color: var(--cream); line-height: 1.6; }
+.law-text em { color: var(--gold); font-style: italic; }
+
+/* ── PRICING / BUSINESS ─────────────────────────────── */
+#business { background: var(--navy); }
+.biz-inner { max-width: 1200px; margin: 0 auto; }
+.biz-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem; margin-top: 3rem;
+}
+.biz-card {
+  padding: 2rem; border-radius: 12px;
+  border: 1px solid rgba(201,168,76,0.1);
+  background: rgba(13,27,42,0.5);
+  position: relative; overflow: hidden;
+}
+.biz-card.featured {
+  border-color: rgba(201,168,76,0.3);
+  background: rgba(18,35,56,0.8);
+}
+.biz-card.featured::before {
+  content: 'RECOMMENDED';
+  position: absolute; top: 16px; right: 16px;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  letter-spacing: 0.15em; color: var(--gold);
+  border: 1px solid rgba(201,168,76,0.3);
+  padding: 3px 8px; border-radius: 2px;
+}
+.biz-tier { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--teal2); letter-spacing: 0.15em; margin-bottom: 0.8rem; }
+.biz-name { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; color: var(--white); margin-bottom: 0.4rem; }
+.biz-price { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--gold); margin: 1rem 0; }
+.biz-price small { font-size: 0.9rem; font-weight: 400; color: var(--gray); font-family: 'DM Sans', sans-serif; }
+.biz-features { list-style: none; margin-top: 1.2rem; }
+.biz-features li {
+  display: flex; gap: 8px; align-items: flex-start;
+  font-size: 0.82rem; color: var(--gray); padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.biz-features li::before { content: '↗'; color: var(--teal2); font-size: 0.7rem; margin-top: 2px; flex-shrink: 0; }
+
+/* ── CTA FINAL ──────────────────────────────────────── */
+#cta {
+  padding: 120px 5%;
+  background: var(--navy2);
+  text-align: center;
+  position: relative; overflow: hidden;
+}
+#cta::before {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 800px; height: 600px;
+  background: radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%);
+}
+.cta-inner { position: relative; max-width: 700px; margin: 0 auto; }
+.cta-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+  letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold);
+  margin-bottom: 2rem; display: block;
+}
+.cta-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 5vw, 4rem); font-weight: 900;
+  color: var(--white); line-height: 1.1; margin-bottom: 1.5rem;
+}
+.cta-sub { color: var(--gray); font-size: 1rem; line-height: 1.7; margin-bottom: 2.5rem; }
+.cta-contact {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+  color: var(--gray); margin-top: 2rem; letter-spacing: 0.05em;
+}
+.cta-contact a { color: var(--gold); text-decoration: none; }
+.cta-contact a:hover { text-decoration: underline; }
+
+/* ── FOOTER ─────────────────────────────────────────── */
+footer {
+  background: var(--navy);
+  border-top: 1px solid rgba(201,168,76,0.08);
+  padding: 3rem 5%;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1rem;
+}
+.footer-left { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--white); }
+.footer-left small { display: block; font-family: 'DM Sans', sans-serif; font-size: 0.75rem; color: var(--gray); font-weight: 300; margin-top: 4px; }
+.footer-right { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; color: rgba(148,163,184,0.5); letter-spacing: 0.05em; text-align: right; }
+
+/* ── ANIMATIONS ─────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; } to { opacity: 1; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.8); }
+}
+@keyframes scrollDrop {
+  0%   { opacity: 1; transform: scaleY(1); transform-origin: top; }
+  50%  { opacity: 0.3; }
+  100% { opacity: 0; transform: scaleY(0.5); transform-origin: bottom; }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes spin {
+  from { transform: translate(-50%,-50%) rotate(0deg); }
+  to   { transform: translate(-50%,-50%) rotate(360deg); }
+}
+@keyframes hubPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0.2); }
+  50%       { box-shadow: 0 0 0 20px rgba(201,168,76,0); }
+}
+@keyframes barGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0; transform: translateY(40px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible { opacity: 1; transform: none; }
+
+/* ── RESPONSIVE ─────────────────────────────────────── */
+@media (max-width: 900px) {
+  .arch-inner, .forensics-inner, .ai-grid { grid-template-columns: 1fr; }
+  .arch-left { position: static; }
+  .gov-tiers { grid-template-columns: 1fr 1fr; }
+  .asc-box { grid-template-columns: 1fr; }
+  .nav-links { display: none; }
+}
+@media (max-width: 600px) {
+  .gov-tiers { grid-template-columns: 1fr; }
+  .hero-stats { gap: 1.5rem; }
+}
+
+/* ── MOBILE CURSOR ──────────────────────────────────── */
+@media (hover: none) {
+  body { cursor: auto; }
+  .cursor, .cursor-ring { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- ── NAVIGATION ──────────────────────────────── -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-mark">P₁</div>
+    PrathamOne
+  </a>
+  <ul class="nav-links">
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#modules">Modules</a></li>
+    <li><a href="#forensics">Forensics</a></li>
+    <li><a href="#ai">AI Governance</a></li>
+    <li><a href="#governance">ASC</a></li>
+    <li><a href="#business">Pricing</a></li>
+  </ul>
+  <a href="#cta" class="nav-cta">Request Pilot</a>
+</nav>
+
+<!-- ── HERO ───────────────────────────────────────── -->
+<section class="hero" id="home">
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      India's First Sovereign Education OS
+    </div>
+    <div class="hero-eyebrow">PrathamOne.com &nbsp;·&nbsp; Academy OS v1.0 &nbsp;·&nbsp; Confidential</div>
+    <h1 class="hero-title">
+      Not an ERP.<br>
+      An <em>Operating System</em>.
+    </h1>
+    <div class="hero-subtitle-line">For India's 1.5 Million Schools</div>
+    <p class="hero-desc">
+      A <strong>metadata-driven, forensic-grade, sovereign kernel</strong> for education management.
+      Every module is data. Every policy is auditable. Every decision is traceable.
+      Zero hardcoded logic. Zero compromises.
+    </p>
+    <div class="hero-actions">
+      <a href="#architecture" class="btn-primary">Explore Architecture</a>
+      <a href="#forensics" class="btn-outline">See Forensic Replay</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-number">10K<span style="font-size:1.2rem;color:var(--gold2)">+</span></span>
+        <span class="stat-label">Tenants Supported</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number">1B<span style="font-size:1.2rem;color:var(--gold2)">+</span></span>
+        <span class="stat-label">Audit Events</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number">9</span>
+        <span class="stat-label">OS Layers</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number">₹5T</span>
+        <span class="stat-label">Market Opportunity</span>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- ── MARQUEE ────────────────────────────────────── -->
+<div class="marquee-wrap">
+  <div class="marquee-track">
+    <span class="marquee-item"><span class="marquee-dot">●</span> Row-Level Security Enforced</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Hash-Chain Audit Trail</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Zero Hardcoded Logic</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> NEP 2020 Compliant</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Tenant Isolation Proven</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Forensic Replay in &lt;10 min</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Metadata-Driven Modules</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> CBSE · ICSE · State Boards</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Local AI Governance Layer</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> 200K Concurrent Users</span>
+    <!-- duplicate for seamless loop -->
+    <span class="marquee-item"><span class="marquee-dot">●</span> Row-Level Security Enforced</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Hash-Chain Audit Trail</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Zero Hardcoded Logic</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> NEP 2020 Compliant</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Tenant Isolation Proven</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Forensic Replay in &lt;10 min</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Metadata-Driven Modules</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> CBSE · ICSE · State Boards</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> Local AI Governance Layer</span>
+    <span class="marquee-item"><span class="marquee-dot">●</span> 200K Concurrent Users</span>
+  </div>
+</div>
+
+<!-- ── OS ARCHITECTURE ────────────────────────────── -->
+<section id="architecture">
+  <div class="arch-inner">
+    <div class="arch-left reveal">
+      <div class="section-label">// os_kernel.sql</div>
+      <h2 class="section-title">Nine Layers.<br>One <em>Sovereign</em><br>Foundation.</h2>
+      <p class="arch-desc">
+        Every table is mandatory. No module bypasses them. No hardcoded logic overrides them.
+        If something is not an entity, it does not exist in the system.
+      </p>
+      <div class="arch-law">
+        <p>The kernel is not a schema. It is the law of the system. Modules, features, boards, and AI are data on top of it — never modifications to it.</p>
+      </div>
+    </div>
+    <div class="layers-list reveal">
+      <div class="layer-card">
+        <span class="layer-num">LAYER 0</span>
+        <div class="layer-name">Tenant Isolation</div>
+        <div class="layer-desc">Row-Level Security at DB connection level. Tenant context established before any SQL executes. No module, no developer, no emergency bypasses this.</div>
+        <span class="layer-tag">POSTGRESQL RLS</span>
+      </div>
+      <div class="layer-card">
+        <span class="layer-num">LAYER 1</span>
+        <div class="layer-name">Core Metadata Kernel</div>
+        <div class="layer-desc">entity_master, attribute_master, relationship_master. If something is not registered here, it does not exist in the OS.</div>
+        <span class="layer-tag">EAV MODEL</span>
+      </div>
+      <div class="layer-card">
+        <span class="layer-num">LAYER 2</span>
+        <div class="layer-name">Role & Permission Engine</div>
+        <div class="layer-desc">Single source of truth for UI visibility, API access, and workflow authorization. No if(role === 'admin') anywhere in the codebase.</div>
+        <span class="layer-tag">RBAC</span>
+      </div>
+      <div class="layer-card">
+        <span class="layer-num">LAYER 3</span>
+        <div class="layer-name">Form & UI Rendering Engine</div>
+        <div class="layer-desc">Zero hardcoded screens. Every form is a database configuration. field_validations, field_visibility_rules — all data-driven.</div>
+        <span class="layer-tag">METADATA-DRIVEN UI</span>
+      </div>
+      <div class="layer-card">
+        <span class="layer-num">LAYER 4</span>
+        <div class="layer-name">Workflow & State Engine</div>
+        <div class="layer-desc">No if(status == 'approved') in the codebase. Every state transition is defined as data. Workflows change without code deployment.</div>
+        <span class="layer-tag">STATE MACHINE</span>
+      </div>
+      <div class="layer-card">
+        <span class="layer-num">LAYER 5</span>
+        <div class="layer-name">Policy & Rules Engine</div>
+        <div class="layer-desc">Institutional governance via controlled DSL grammar. Attendance &lt; 75% → BLOCK exam. Late fee → CALCULATE fine. Deterministic. Machine-executable.</div>
+        <span class="layer-tag">POLICY DSL</span>
+      </div>
+      <div class="layer-card">
+        <span class="layer-num">LAYER 6</span>
+        <div class="layer-name">Generic Data Storage</div>
+        <div class="layer-desc">entity_records + entity_attribute_values. EAV model with typed value columns and searchable index. Unlimited domain flexibility. No schema changes for new modules.</div>
+        <span class="layer-tag">EAV + INDEXED</span>
+      </div>
+      <div class="layer-card">
+        <span class="layer-num">LAYER 7</span>
+        <div class="layer-name">AI & Extension Engine</div>
+        <div class="layer-desc">Dormant until activated. Governed, not autonomous. AI never writes to DB directly. Every inference is logged, versioned, and traceable.</div>
+        <span class="layer-tag">LOCAL AI SANDBOX</span>
+      </div>
+      <div class="layer-card">
+        <span class="layer-num">LAYER 8 · 9</span>
+        <div class="layer-name">System Settings + Audit Chain</div>
+        <div class="layer-desc">No magic numbers in code. Per-tenant configurable thresholds. SHA-256 hash-chained audit events. Legally admissible. Forensic-grade.</div>
+        <span class="layer-tag">IMMUTABLE CHAIN</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MODULES ────────────────────────────────────── -->
+<section id="modules">
+  <div class="modules-inner">
+    <div class="reveal">
+      <div class="section-label">// canonical_modules</div>
+      <h2 class="section-title">Modules Are <em>Data</em>.<br>Not Code.</h2>
+      <p class="section-body" style="margin-top:1rem">
+        Every module — Admissions, Exams, Fees, Attendance — is configured on the kernel. Zero new tables. Zero new columns. Zero schema changes. New boards, new institutions, new curricula — all data.
+      </p>
+    </div>
+    <div class="modules-grid" style="margin-top:3.5rem">
+      <div class="module-card reveal">
+        <div class="module-icon" style="background:rgba(201,168,76,0.1)">🎓</div>
+        <div class="module-title">Student Admission</div>
+        <div class="module-desc">Complete lifecycle from application to enrollment. Policy-blocked approval if documents missing. Forensic replay for every dispute. Age validation via structured DSL.</div>
+        <div class="module-tags">
+          <span class="module-tag">DRAFT→ENROLLED</span>
+          <span class="module-tag">8 PHASES</span>
+          <span class="module-tag">AUDIT-NATIVE</span>
+        </div>
+      </div>
+      <div class="module-card reveal">
+        <div class="module-icon" style="background:rgba(14,116,144,0.1)">📝</div>
+        <div class="module-title">Examinations</div>
+        <div class="module-desc">Scheduling, evaluation, moderation, rechecking — all via workflow engine. Grades derived from policy. No hardcoded 35 or 40. Board-specific grading from system_settings.</div>
+        <div class="module-tags">
+          <span class="module-tag">CBSE / ICSE / STATE</span>
+          <span class="module-tag">FORENSIC REPLAY</span>
+          <span class="module-tag">ZERO MAGIC NUMBERS</span>
+        </div>
+      </div>
+      <div class="module-card reveal">
+        <div class="module-icon" style="background:rgba(26,94,58,0.2)">🧾</div>
+        <div class="module-title">Fees & Finance</div>
+        <div class="module-desc">Every rupee tracked. Waivers need APPROVAL workflow. Refunds are new transactions — never edits. Late fees calculated by policy engine. Financial ledger reconciles to zero daily.</div>
+        <div class="module-tags">
+          <span class="module-tag">ZERO EDIT POLICY</span>
+          <span class="module-tag">LEDGER INTEGRITY</span>
+          <span class="module-tag">&lt;150ms COMMIT</span>
+        </div>
+      </div>
+      <div class="module-card reveal">
+        <div class="module-icon" style="background:rgba(14,116,144,0.12)">📊</div>
+        <div class="module-title">Attendance</div>
+        <div class="module-desc">MARKED → LOCKED workflow. Teacher-only lock transition. Attendance percentage drives exam eligibility via policy engine. No new tables — just data on the kernel.</div>
+        <div class="module-tags">
+          <span class="module-tag">POLICY-DRIVEN</span>
+          <span class="module-tag">75% THRESHOLD</span>
+          <span class="module-tag">ZERO SCHEMA CHANGE</span>
+        </div>
+      </div>
+      <div class="module-card reveal">
+        <div class="module-icon" style="background:rgba(201,168,76,0.08)">🤖</div>
+        <div class="module-title">Local AI Governance</div>
+        <div class="module-desc">Student AI tutor. Teacher evaluation assist. All advisory-mode — AI proposes, human confirms, kernel writes. Per-tenant enable/disable. Model versioned. Every inference logged.</div>
+        <div class="module-tags">
+          <span class="module-tag">ADVISORY ONLY</span>
+          <span class="module-tag">COURT-TRACEABLE</span>
+          <span class="module-tag">TENANT-ISOLATED</span>
+        </div>
+      </div>
+      <div class="module-card reveal">
+        <div class="module-icon" style="background:rgba(100,50,160,0.12)">🔌</div>
+        <div class="module-title">Plugin Ecosystem</div>
+        <div class="module-desc">EdTech partners build on the kernel without touching it. Sandbox-isolated containers. No direct DB access ever. Plugins propose, kernel validates, audit logs everything.</div>
+        <div class="module-tags">
+          <span class="module-tag">SANDBOXED</span>
+          <span class="module-tag">MARKETPLACE</span>
+          <span class="module-tag">AUDIT-NATIVE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FORENSIC REPLAY ────────────────────────────── -->
+<section id="forensics">
+  <div class="forensics-inner">
+    <div class="forensic-terminal reveal">
+      <div class="terminal-bar">
+        <div class="terminal-dot" style="background:#FC6A6A"></div>
+        <div class="terminal-dot" style="background:#FBBF24"></div>
+        <div class="terminal-dot" style="background:#34D399"></div>
+        <span class="terminal-title">forensic_replay.sql — Dispute: Marks Changed Post-Publication</span>
+      </div>
+      <div class="terminal-body">
+        <div class="t-line t-comment">-- DISPUTE: Parent alleges marks changed after publication</div>
+        <div class="t-line t-comment">-- Student: S123 | Exam: MIDTERM_2026</div>
+        <div class="t-blank"></div>
+        <div class="t-line"><span class="t-key">SELECT</span> <span class="t-val">tenant_sequence_number,</span></div>
+        <div class="t-line"><span class="t-dim">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="t-val">action_type, actor_id, created_at,</span></div>
+        <div class="t-line"><span class="t-dim">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="t-val">old_state->'marks', new_state->'marks',</span></div>
+        <div class="t-line"><span class="t-dim">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="t-val">current_hash, previous_hash</span></div>
+        <div class="t-line"><span class="t-key">FROM</span> <span class="t-str">audit_event_log</span></div>
+        <div class="t-line"><span class="t-key">WHERE</span> <span class="t-val">record_id = 'S123-MIDTERM'</span></div>
+        <div class="t-line"><span class="t-key">ORDER BY</span> <span class="t-val">tenant_sequence_number ASC;</span></div>
+        <div class="t-blank"></div>
+        <div class="t-line t-comment">-- RESULTS ──────────────────────────────</div>
+        <div class="t-blank"></div>
+        <div class="t-line"><span class="t-dim">SEQ 1041</span> <span class="t-val">CREATE</span>  <span class="t-str">teacher_T42</span>  <span class="t-dim">marks: null → 38</span></div>
+        <div class="t-line"><span class="t-dim">SEQ 1089</span> <span class="t-val">TRANSITION</span> <span class="t-str">teacher_T42</span>  <span class="t-dim">EVALUATED→PUBLISHED</span></div>
+        <div class="t-blank"></div>
+        <div class="t-line t-comment">-- No UPDATE events after SEQ 1089</div>
+        <div class="t-line t-comment">-- Hash chain: VALID (0 breaks)</div>
+        <div class="t-blank"></div>
+        <div class="t-line t-gold">━━━ FORENSIC VERDICT ━━━━━━━━━━━━━━━━━━━</div>
+        <div class="t-line"><span class="t-val">marks_at_publication:</span>  <span class="t-str">38 / 50</span></div>
+        <div class="t-line"><span class="t-val">marks_today:</span>           <span class="t-str">38 / 50</span></div>
+        <div class="t-line"><span class="t-val">post_publish_mutations:</span> <span class="t-red">0</span></div>
+        <div class="t-line"><span class="t-val">chain_integrity:</span>       <span class="t-val">✓ VERIFIED</span></div>
+        <div class="t-blank"></div>
+        <div class="t-line t-gold">Claim DISPROVED. Evidence is immutable.</div>
+      </div>
+    </div>
+    <div class="forensic-right reveal">
+      <div class="section-label">// audit_event_log</div>
+      <h2 class="section-title">Every Dispute.<br><em>Resolved</em> in<br>Under 10 Minutes.</h2>
+      <p class="section-body" style="margin-top:1.2rem">
+        The hash-chained audit engine turns every allegation into a forensic case — with cryptographic proof, not memory.
+      </p>
+      <div class="forensic-steps">
+        <div class="fstep">
+          <div class="fstep-num">1</div>
+          <div class="fstep-content">
+            <div class="fstep-title">Query the Audit Spine</div>
+            <div class="fstep-desc">Every action generates an immutable audit event with SHA-256 hash linking to the previous event.</div>
+          </div>
+        </div>
+        <div class="fstep">
+          <div class="fstep-num">2</div>
+          <div class="fstep-content">
+            <div class="fstep-title">Identify the State Transition</div>
+            <div class="fstep-desc">Find the exact PUBLISHED event — actor, timestamp, workflow state, old value, new value.</div>
+          </div>
+        </div>
+        <div class="fstep">
+          <div class="fstep-num">3</div>
+          <div class="fstep-content">
+            <div class="fstep-title">Verify Hash Chain Continuity</div>
+            <div class="fstep-desc">Any tampering — even one character — breaks the chain at that exact sequence number.</div>
+          </div>
+        </div>
+        <div class="fstep">
+          <div class="fstep-num">4</div>
+          <div class="fstep-content">
+            <div class="fstep-title">Produce Evidence</div>
+            <div class="fstep-desc">Signed JSON export with verification status. Legally admissible. Court-traceable.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── SCALE ──────────────────────────────────────── -->
+<section id="scale">
+  <div class="scale-inner">
+    <div class="reveal">
+      <div class="section-label">// infrastructure.yml</div>
+      <h2 class="section-title">Built for <em>India's</em><br>Full Scale. From Day One.</h2>
+    </div>
+    <div class="scale-metrics reveal">
+      <div class="metric-cell">
+        <div class="metric-value">10<span class="metric-unit">K</span></div>
+        <div class="metric-label">Institutions</div>
+        <div class="metric-sub">SHARED + DEDICATED SHARDS</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-value">10<span class="metric-unit">M</span></div>
+        <div class="metric-label">Students</div>
+        <div class="metric-sub">HASH-PARTITIONED</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-value">1<span class="metric-unit">B+</span></div>
+        <div class="metric-label">Audit Events</div>
+        <div class="metric-sub">APPEND-ONLY CHAIN</div>
+      </div>
+      <div class="metric-cell">
+        <div class="metric-value">200<span class="metric-unit">K</span></div>
+        <div class="metric-label">Concurrent Users</div>
+        <div class="metric-sub">PGBOUNCER + REPLICAS</div>
+      </div>
+    </div>
+    <div class="perf-grid reveal" style="margin-top:3rem">
+      <div class="perf-item">
+        <div class="perf-op">Fee Payment Commit</div>
+        <div class="perf-bar-wrap"><div class="perf-bar" style="width:30%"></div></div>
+        <div class="perf-val">P95 &lt; 150ms</div>
+      </div>
+      <div class="perf-item">
+        <div class="perf-op">Audit Event Insert</div>
+        <div class="perf-bar-wrap"><div class="perf-bar" style="width:5%"></div></div>
+        <div class="perf-val">P95 &lt; 5ms</div>
+      </div>
+      <div class="perf-item">
+        <div class="perf-op">Medium Report (&lt;10K rows)</div>
+        <div class="perf-bar-wrap"><div class="perf-bar" style="width:40%"></div></div>
+        <div class="perf-val">P95 &lt; 2 seconds</div>
+      </div>
+      <div class="perf-item">
+        <div class="perf-op">Local AI Inference</div>
+        <div class="perf-bar-wrap"><div class="perf-bar" style="width:16%"></div></div>
+        <div class="perf-val">P95 &lt; 800ms</div>
+      </div>
+      <div class="perf-item">
+        <div class="perf-op">DB Failover Recovery</div>
+        <div class="perf-bar-wrap"><div class="perf-bar" style="width:10%"></div></div>
+        <div class="perf-val">&lt; 30 seconds</div>
+      </div>
+      <div class="perf-item">
+        <div class="perf-op">Board-Wide Publish (10K Schools)</div>
+        <div class="perf-bar-wrap"><div class="perf-bar" style="width:20%"></div></div>
+        <div class="perf-val">&lt; 60 seconds</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── AI GOVERNANCE ──────────────────────────────── -->
+<section id="ai">
+  <div class="ai-inner">
+    <div class="reveal">
+      <div class="section-label">// ai_governance.sql</div>
+      <h2 class="section-title">AI That <em>Assists</em>.<br>Never AI That Decides.</h2>
+    </div>
+    <div class="ai-grid">
+      <div class="ai-visual reveal">
+        <div class="ai-hub">
+          <div class="ai-orbit ai-orbit-1">
+            <div class="ai-satellite sat-1">🎓</div>
+            <div class="ai-satellite sat-2">📊</div>
+          </div>
+          <div class="ai-orbit ai-orbit-2">
+            <div class="ai-satellite sat-5">✅</div>
+            <div class="ai-satellite sat-6">📋</div>
+          </div>
+          <div class="ai-hub-inner">🧠</div>
+        </div>
+      </div>
+      <div class="ai-principles reveal">
+        <div class="ai-principle">
+          <div class="ai-icon" style="background:rgba(201,168,76,0.1)">🔒</div>
+          <div>
+            <div class="ai-principle-title">Advisory by Default</div>
+            <div class="ai-principle-desc">AI proposes. Human confirms. Kernel writes. No AI capability is authoritative without explicit human confirmation.</div>
+          </div>
+        </div>
+        <div class="ai-principle">
+          <div class="ai-icon" style="background:rgba(14,116,144,0.1)">🏫</div>
+          <div>
+            <div class="ai-principle-title">Per-Tenant Control</div>
+            <div class="ai-principle-desc">School A enables AI tutor. School B disables AI entirely. School C uses Local AI only. Controlled via ASC — audited, versioned, sovereign.</div>
+          </div>
+        </div>
+        <div class="ai-principle">
+          <div class="ai-icon" style="background:rgba(26,94,58,0.15)">📜</div>
+          <div>
+            <div class="ai-principle-title">Court-Traceable Decisions</div>
+            <div class="ai-principle-desc">Every AI inference: input hash, output hash, model version, confidence score, human action — logged in ai_execution_log. Legally admissible evidence.</div>
+          </div>
+        </div>
+        <div class="ai-principle">
+          <div class="ai-icon" style="background:rgba(192,57,43,0.1)">🚫</div>
+          <div>
+            <div class="ai-principle-title">No Cross-Tenant Inference</div>
+            <div class="ai-principle-desc">AI containers are tenant-isolated sandboxes. No shared training pools. No cross-institution data exposure. Architecture enforced — not policy enforced.</div>
+          </div>
+        </div>
+        <div class="ai-principle">
+          <div class="ai-icon" style="background:rgba(100,50,160,0.12)">⚡</div>
+          <div>
+            <div class="ai-principle-title">Silent Activation Impossible</div>
+            <div class="ai-principle-desc">Every AI capability activation requires ASC AI_GOVERNOR approval with mandatory justification. AI can never be "quietly enabled."</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── GOVERNANCE ─────────────────────────────────── -->
+<section id="governance">
+  <div class="gov-inner">
+    <div class="reveal">
+      <div class="section-label">// asc_governance</div>
+      <h2 class="section-title">The Admin Sovereign Console.<br><em>Governance</em> Without Backdoors.</h2>
+      <p class="section-body" style="margin-top:1rem">Every configuration, every policy, every module activation goes through the ASC — and every ASC action is itself audited. No direct database access. No emergency bypasses. No exceptions.</p>
+    </div>
+    <div class="gov-tiers reveal" style="margin-top:3rem">
+      <div class="tier">
+        <div class="tier-badge" style="background:#22C55E"></div>
+        <span class="tier-label">Tier 1 — Low Risk</span>
+        <div class="tier-title">Non-Kernel Additions</div>
+        <div class="tier-desc">New entity metadata, report definitions, AI capability registration.</div>
+        <div class="tier-approval">✓ Technical Lead</div>
+      </div>
+      <div class="tier">
+        <div class="tier-badge" style="background:#FBBF24"></div>
+        <span class="tier-label">Tier 2 — Medium Risk</span>
+        <div class="tier-title">Policy & Workflow</div>
+        <div class="tier-desc">Grading threshold change, fee waiver rules, new workflow states.</div>
+        <div class="tier-approval">✓ Tech Lead + Compliance</div>
+      </div>
+      <div class="tier">
+        <div class="tier-badge" style="background:#F97316"></div>
+        <span class="tier-label">Tier 3 — High Risk</span>
+        <div class="tier-title">Schema Evolution</div>
+        <div class="tier-desc">New core table, audit structure change, stored procedure modification.</div>
+        <div class="tier-approval">✓ Architecture Review Board</div>
+      </div>
+      <div class="tier">
+        <div class="tier-badge" style="background:#EF4444"></div>
+        <span class="tier-label">Tier 4 — Critical</span>
+        <div class="tier-title">Kernel Surgery</div>
+        <div class="tier-desc">RLS policy change, audit hash algorithm, shard registry structure.</div>
+        <div class="tier-approval">✓ Founder Sign-Off Required</div>
+      </div>
+    </div>
+    <div class="asc-box reveal">
+      <div>
+        <div class="section-label" style="margin-bottom:0.5rem">// asc.domains</div>
+        <h3 style="font-family:'Playfair Display',serif; font-size:1.4rem; color:var(--white); margin-bottom:0.5rem">8 Governance Domains</h3>
+        <p style="font-size:0.85rem; color:var(--gray); line-height:1.6">The only interface for system-level configuration. No backdoors. No direct DB connections. Every action logged.</p>
+      </div>
+      <div class="asc-domains">
+        <div class="asc-domain"><strong>TENANT MGMT</strong>Onboard, promote, suspend — with audit continuity</div>
+        <div class="asc-domain"><strong>SYSTEM SETTINGS</strong>Global + tenant-level config. No magic numbers.</div>
+        <div class="asc-domain"><strong>MODULE REGISTRY</strong>Entity + attribute registration. Zero schema changes.</div>
+        <div class="asc-domain"><strong>WORKFLOW CONFIG</strong>States, transitions, permissions — as data.</div>
+        <div class="asc-domain"><strong>POLICY MGMT</strong>DSL grammar, preview, versioned activation.</div>
+        <div class="asc-domain"><strong>AI GOVERNANCE</strong>Model registry, capability control, tenant enable/disable.</div>
+        <div class="asc-domain"><strong>COMPLIANCE</strong>Hash chain validation, RTI export, government audit.</div>
+        <div class="asc-domain"><strong>OBSERVABILITY</strong>Per-tenant load, shard health, audit throughput.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DOCTRINE ───────────────────────────────────── -->
+<section id="doctrine">
+  <div class="doctrine-inner reveal">
+    <div class="section-label">// os_design_law.locked</div>
+    <div class="doctrine-quote">
+      Control the kernel. Capital may scale the platform — but must never control its core doctrine.
+    </div>
+    <div class="doctrine-attr">— Jawahar R Mallah, Founder & Architect, PrathamOne</div>
+    <div class="doctrine-laws">
+      <div class="doctrine-law">
+        <div class="law-num">I</div>
+        <div class="law-text">No table in the Sovereign Kernel is optional. <em>No feature may bypass it.</em></div>
+      </div>
+      <div class="doctrine-law">
+        <div class="law-num">II</div>
+        <div class="law-text">No hard-coded logic may override the kernel. <em>Everything is data.</em></div>
+      </div>
+      <div class="doctrine-law">
+        <div class="law-num">III</div>
+        <div class="law-text">If something is not an entity, it does not exist in the system. <em>Register first. Then build.</em></div>
+      </div>
+      <div class="doctrine-law">
+        <div class="law-num">IV</div>
+        <div class="law-text">The audit chain is the legal record. <em>It is more important than the application data itself.</em></div>
+      </div>
+      <div class="doctrine-law">
+        <div class="law-num">V</div>
+        <div class="law-text">AI never becomes authoritative by default. <em>AI proposes. Humans confirm. The kernel writes.</em></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BUSINESS / PRICING ─────────────────────────── -->
+<section id="business">
+  <div class="biz-inner">
+    <div class="reveal">
+      <div class="section-label">// pricing_model</div>
+      <h2 class="section-title">A Platform Built<br>for <em>₹5 Trillion</em> Scale.</h2>
+      <p class="section-body" style="margin-top:1rem">Six revenue streams. One sovereign architecture. From single institutions to state-board federations.</p>
+    </div>
+    <div class="biz-grid reveal">
+      <div class="biz-card">
+        <div class="biz-tier">TIER I</div>
+        <div class="biz-name">Institution</div>
+        <div class="biz-price">₹12K <small>– ₹3L / year</small></div>
+        <ul class="biz-features">
+          <li>Full OS kernel — 9 layers active</li>
+          <li>Admission, Exams, Fees modules</li>
+          <li>Tenant-isolated audit chain</li>
+          <li>ASC access — TENANT_ADMIN role</li>
+          <li>NEP 2020 compliance ready</li>
+          <li>Forensic replay on all disputes</li>
+        </ul>
+      </div>
+      <div class="biz-card featured">
+        <div class="biz-tier">TIER II</div>
+        <div class="biz-name">Government Board</div>
+        <div class="biz-price">₹5Cr <small>– ₹50Cr / state</small></div>
+        <ul class="biz-features">
+          <li>Dedicated cluster per state board</li>
+          <li>Multi-institution federation</li>
+          <li>Cross-district aggregated reporting</li>
+          <li>Board-specific grading & policy</li>
+          <li>RTI compliance & audit export</li>
+          <li>CBSE / ICSE / State Board ready</li>
+          <li>SLA with 99.9% uptime guarantee</li>
+        </ul>
+      </div>
+      <div class="biz-card">
+        <div class="biz-tier">TIER III</div>
+        <div class="biz-name">AI Premium</div>
+        <div class="biz-price">₹2K <small>– ₹20K / mo</small></div>
+        <ul class="biz-features">
+          <li>Local AI tutor — student-facing</li>
+          <li>Teacher evaluation assist</li>
+          <li>AI performance monitoring</li>
+          <li>Full ai_execution_log</li>
+          <li>Per-tenant AI enable / disable</li>
+          <li>Model version control</li>
+        </ul>
+      </div>
+    </div>
+    <div style="margin-top:2.5rem; text-align:center; font-size:0.8rem; color:var(--gray); font-family:'JetBrains Mono', monospace; letter-spacing:0.08em;" class="reveal">
+      + Plugin Marketplace (30% revenue share) &nbsp;·&nbsp; + Strategic Partnerships &nbsp;·&nbsp; + Per-Student Volume Pricing
+    </div>
+  </div>
+</section>
+
+<!-- ── FINAL CTA ───────────────────────────────────── -->
+<section id="cta">
+  <div class="cta-inner reveal">
+    <span class="cta-tag">// begin.pilot</span>
+    <h2 class="cta-title">The Architecture Is Complete.<br>The Doctrine Is Locked.</h2>
+    <p class="cta-sub">What remains is execution. Join the controlled pilot — 3 to 5 institutions, real data, full governance. Prove the platform before you commit.</p>
+    <div style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;">
+      <a href="mailto:jawahar.mallah@gmail.com" class="btn-primary">Request Pilot Access</a>
+      <a href="#architecture" class="btn-outline">Read the Architecture</a>
+    </div>
+    <div class="cta-contact">
+      Jawahar R Mallah &nbsp;·&nbsp; <a href="mailto:jawahar.mallah@gmail.com">jawahar.mallah@gmail.com</a>
+      &nbsp;·&nbsp; <a href="https://PrathamOne.com" target="_blank">PrathamOne.com</a>
+      &nbsp;·&nbsp; <a href="https://aiTDL.com" target="_blank">aiTDL.com</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ─────────────────────────────────────── -->
+<footer>
+  <div class="footer-left">
+    PrathamOne Academy OS
+    <small>© 2026 PrathamOne / aiTDL — Confidential & Proprietary. All rights reserved.</small>
+  </div>
+  <div class="footer-right">
+    v1.0 · Sovereign Kernel Locked<br>
+    Architect: Jawahar R Mallah<br>
+    Schema-Safe · Forensic-Grade · Audit-Native
+  </div>
+</footer>
+
+<script>
+// ── CURSOR ───────────────────────────────────────────────────────────
+const cursor = document.getElementById('cursor');
+const ring   = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+(function animate() {
+  rx += (mx - rx) * 0.12; ry += (my - ry) * 0.12;
+  cursor.style.left = mx + 'px'; cursor.style.top = my + 'px';
+  ring.style.left   = rx + 'px'; ring.style.top  = ry + 'px';
+  requestAnimationFrame(animate);
+})();
+document.querySelectorAll('a,button,.layer-card,.module-card,.fstep,.tier,.asc-domain').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    ring.style.width  = '56px'; ring.style.height = '56px';
+    ring.style.borderColor = 'rgba(201,168,76,0.8)';
+  });
+  el.addEventListener('mouseleave', () => {
+    ring.style.width  = '36px'; ring.style.height = '36px';
+    ring.style.borderColor = 'rgba(201,168,76,0.5)';
+  });
+});
+
+// ── SCROLL REVEAL ────────────────────────────────────────────────────
+const revealEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver((entries) => {
+  entries.forEach((entry, i) => {
+    if (entry.isIntersecting) {
+      setTimeout(() => entry.target.classList.add('visible'), 80);
+      io.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+revealEls.forEach(el => io.observe(el));
+
+// ── NAV ACTIVE + SCROLL SHADOW ───────────────────────────────────────
+window.addEventListener('scroll', () => {
+  const nav = document.querySelector('nav');
+  nav.style.boxShadow = window.scrollY > 40
+    ? '0 4px 40px rgba(0,0,0,0.4)' : 'none';
+});
+
+// ── SMOOTH NAV ───────────────────────────────────────────────────────
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth' }); }
+  });
+});
+
+// ── COUNTER ANIMATION ────────────────────────────────────────────────
+function animateCounters() {
+  document.querySelectorAll('.stat-number').forEach(el => {
+    const text = el.textContent;
+    el.setAttribute('data-target', text);
+  });
+}
+animateCounters();
+</script>
+</body>
+</html>

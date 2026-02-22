@@ -148,12 +148,20 @@ async def _load_attribute_master(
     Return a mapping of {attribute_code: {data_type, is_required, label}}
     for all attributes defined for this entity_code.
     """
+    # LAW 2 fix: attribute_master has no entity_code or label column.
+    # Correct columns: display_label (not label).
+    # Correct entity filter: JOIN entity_master on entity_id and filter by entity_code.
     rows = await conn.fetch(
         """
-        SELECT attribute_code, data_type, is_required, label
-        FROM   attribute_master
-        WHERE  entity_code = $1
-          AND  tenant_id   = current_setting('app.tenant_id', true)::uuid
+        SELECT am.attribute_code,
+               am.display_label  AS label,
+               am.data_type,
+               am.is_required
+        FROM   attribute_master am
+        JOIN   entity_master    em ON em.entity_id  = am.entity_id
+                                  AND em.tenant_id  = am.tenant_id
+        WHERE  em.entity_code = $1
+          AND  am.tenant_id   = current_setting('app.tenant_id', true)::uuid
         """,
         entity_code,
     )

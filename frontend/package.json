@@ -1,7 +1,15 @@
 {
-  "name": "frontend",
+  "name": "prathamone-academy-os-frontend",
+  "description": "PrathamOne Academy OS — Sovereign, declarative Academic OS frontend",
+  "version": "1.0.4",
+  "author": {
+    "name": "Jawahar R Mallah",
+    "role": "Founder & Technical Architect",
+    "url": "https://aiTDL.com"
+  },
+  "homepage": "https://pratham1.com",
+  "license": "UNLICENSED",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,13 +19,16 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "framer-motion": "^12.34.3",
     "lucide-react": "^0.575.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-router-dom": "^7.13.0",
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@tailwindcss/postcss": "^4.2.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
