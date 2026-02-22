@@ -20,6 +20,8 @@ Specific laws and constraints for individual OS modules:
 *   **[05 Studybuddy AI Rules](file:///d:/IMP/GitHub/prathamone-academy-os/RULE-BOOK/05_STUDYBUDDY_AI_RULES.md):** Student safe-AI protocols (SB-1 to SB-12).
 *   **[06 Report & Analytics Rules](file:///d:/IMP/GitHub/prathamone-academy-os/RULE-BOOK/06_REPORT_ANALYTICS_RULES.md):** Declarative extraction & visualization laws.
 *   **[07 UI Metadata Rules](file:///d:/IMP/GitHub/prathamone-academy-os/RULE-BOOK/07_UI_METADATA_RULES.md):** Metadata-driven display and decoupling laws (UI-1 to UI-14).
+*   **[08 Sovereign Rule Matrix](file:///d:/IMP/GitHub/prathamone-academy-os/RULE-BOOK/08_SOVEREIGN_RULE_MATRIX.md):** 🔒 Comprehensive cross-reference of all 59 Locked Laws across Layers 0–12 (Audit Output v1.0).
+*   **[09 Pending Laws & Gap Report](file:///d:/IMP/GitHub/prathamone-academy-os/RULE-BOOK/09_PENDING_LAWS.md):** ⚠️ Vulnerability Gap Analysis — 6 critical gaps identified, 22 Draft Laws pending ratification.
 
 ---
 
