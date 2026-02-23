@@ -199,6 +199,7 @@ DECLARE
     v_workflow_id   UUID;
     v_from_state    TEXT;
     v_transition_id UUID;
+    v_to_state_id   UUID;
     v_log_id        UUID := gen_random_uuid();
 BEGIN
     -- 1. Resolve entity and workflow
@@ -212,18 +213,21 @@ BEGIN
     SELECT to_state INTO v_from_state 
     FROM workflow_state_log
     WHERE tenant_id = v_tenant_id AND record_id = p_record_id
-    ORDER BY transition_at DESC LIMIT 1;
+    ORDER BY seq_id DESC LIMIT 1;
 
     -- 3. Validate transition exists (LAW 3)
-    SELECT wt.transition_id
-    INTO v_transition_id
+    SELECT wt.transition_id, ws.state_id
+    INTO v_transition_id, v_to_state_id
     FROM workflow_transitions wt
-    WHERE wt.workflow_id     = v_workflow_id
-      AND wt.to_state_code   = p_to_state
-      AND wt.tenant_id       = v_tenant_id
+    JOIN workflow_states ws ON ws.workflow_id = wt.workflow_id 
+                           AND ws.tenant_id = wt.tenant_id 
+                           AND ws.state_code = p_to_state
+    WHERE wt.workflow_id = v_workflow_id
+      AND wt.to_state    = p_to_state
+      AND wt.tenant_id   = v_tenant_id
       AND (
-          (v_from_state IS NULL AND wt.from_state_code IS NULL)
-          OR (wt.from_state_code = v_from_state)
+          (v_from_state IS NULL AND wt.from_state IS NULL)
+          OR (wt.from_state = v_from_state)
       );
 
     IF NOT FOUND THEN
@@ -241,16 +245,16 @@ BEGIN
         jsonb_build_object('notes', p_notes)
     );
 
-    -- 5. Update current instance state table
+    -- 5. Update current instance state table (Layer 4)
     INSERT INTO workflow_instance_state (
-        tenant_id, record_id, entity_code, state_code
+        tenant_id, workflow_id, record_id, current_state_id
     ) VALUES (
-        v_tenant_id, p_record_id, p_entity_code, p_to_state
+        v_tenant_id, v_workflow_id, p_record_id, v_to_state_id
     )
-    ON CONFLICT (tenant_id, record_id)
+    ON CONFLICT (tenant_id, workflow_id, record_id)
     DO UPDATE SET 
-        state_code = EXCLUDED.state_code,
-        entered_at = now();
+        current_state_id = EXCLUDED.current_state_id,
+        entered_at       = now();
 
     -- 6. Audit
     INSERT INTO audit_event_log(

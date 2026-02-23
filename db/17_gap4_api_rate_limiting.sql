@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS tenant_shard_config (
     contracted_tier         TEXT        NOT NULL DEFAULT 'STANDARD'
                                 CHECK (contracted_tier IN ('STARTER', 'STANDARD', 'ENTERPRISE', 'UNLIMITED')),
     effective_from          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    shard_capacity_pct      NUMERIC(5,2) NOT NULL DEFAULT 0.0,
     notes                   TEXT,
 
     CONSTRAINT pk_tenant_shard_config PRIMARY KEY (tenant_id)

@@ -202,10 +202,11 @@ CREATE TABLE IF NOT EXISTS policy_conditions (
     tenant_id           UUID        NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
     condition_id        UUID        NOT NULL DEFAULT gen_random_uuid(),
     policy_id           UUID        NOT NULL,
+    condition_code      TEXT,                           -- Added for seeding compatibility
     condition_group     TEXT        NOT NULL DEFAULT 'default',  -- Groups allow nested AND/OR
     combine_operator    TEXT        NOT NULL DEFAULT 'AND'
                             CHECK (combine_operator IN ('AND','OR')),
-    subject_type        TEXT        NOT NULL,
+    subject_type        TEXT        NOT NULL DEFAULT 'ATTRIBUTE',
     -- subject_type options:
     --   ATTRIBUTE    — compares an entity attribute value
     --   ROLE         — checks actor's role membership
@@ -214,8 +215,9 @@ CREATE TABLE IF NOT EXISTS policy_conditions (
     --   CUSTOM_DSL   — full JSON Logic expression in dsl_expression
     attribute_id        UUID,                           -- FK → attribute_master (when subject_type=ATTRIBUTE)
     operator            TEXT        NOT NULL,
-    -- operator examples: eq | ne | lt | lte | gt | gte | in | not_in | contains | matches_regex
-    comparison_value    JSONB       NOT NULL,           -- Typed expected value(s); always structured JSON
+    rule_definition     JSONB,                          -- Added for seeding compatibility
+    comparison_value    JSONB,                          -- Structured expected value(s)
+    description         TEXT,                           -- Added for seeding compatibility
     dsl_expression      JSONB,                          -- Full JSON Logic tree for CUSTOM_DSL subject_type
     negate              BOOLEAN     NOT NULL DEFAULT FALSE,  -- TRUE = NOT(this condition)
     sort_order          INT         NOT NULL DEFAULT 0,
@@ -226,7 +228,8 @@ CREATE TABLE IF NOT EXISTS policy_conditions (
     CONSTRAINT fk_pc_policy FOREIGN KEY (tenant_id, policy_id)
         REFERENCES policy_master(tenant_id, policy_id) ON DELETE CASCADE,
     CONSTRAINT fk_pc_attribute FOREIGN KEY (tenant_id, attribute_id)
-        REFERENCES attribute_master(tenant_id, attribute_id) ON DELETE RESTRICT
+        REFERENCES attribute_master(tenant_id, attribute_id) ON DELETE RESTRICT,
+    CONSTRAINT uq_policy_condition UNIQUE (tenant_id, policy_id, condition_code)
 );
 
 COMMENT ON TABLE  policy_conditions                   IS 'Layer 5: Structured DSL predicates for a policy. No free text or raw SQL ever (LAW 9). Evaluated by the policy engine BEFORE workflow transitions (LAW 4).';

@@ -21,6 +21,9 @@ FROM nginx:stable-alpine
 # Copy build artifacts to nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
+# SPA routing: serve index.html for all routes so React Router handles /login, /dashboard etc.
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Expose port 80
 EXPOSE 80
 

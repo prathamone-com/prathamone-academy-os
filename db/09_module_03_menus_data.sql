@@ -20,15 +20,19 @@ BEGIN
     INSERT INTO menu_items (tenant_id, menu_id, label, icon_name, route_path, action_type, action_target, required_roles, sort_order)
     VALUES
         -- Admissions
-        (NULL, v_menu_id, 'Admission App', 'FileText', '/admissions/apply', 'FORM',   'ADMISSION_APP_FORM', '{ADMIN, ADMISSION_OFFICIAL, STUDENT}', 10),
-        (NULL, v_menu_id, 'Admission Funnel', 'BarChart3',  '/reports/admissions/funnel', 'REPORT', 'admission.funnel', '{ADMIN, ADMISSION_OFFICIAL}', 20),
+        (NULL, v_menu_id, 'Admission App', 'FileText', '/admissions/apply', 'FORM',   'ADMISSION_APP_FORM', '{ADMIN, TENANT_ADMIN, ADMISSION_OFFICIAL, STUDENT}', 10),
+        (NULL, v_menu_id, 'Admission Funnel', 'BarChart3',  '/reports/admissions/funnel', 'REPORT', 'admission.funnel', '{ADMIN, TENANT_ADMIN, ADMISSION_OFFICIAL}', 20),
         
         -- Exams
-        (NULL, v_menu_id, 'Ranklist', 'Trophy', '/reports/exams/ranklist', 'REPORT', 'exams.class_ranklist', '{ADMIN, TEACHER, STUDENT}', 30),
-        (NULL, v_menu_id, 'Marks Dist.', 'PieChart', '/reports/exams/marks', 'REPORT', 'exams.marks_distribution', '{ADMIN, TEACHER}', 40),
+        (NULL, v_menu_id, 'Ranklist', 'Trophy', '/reports/exams/ranklist', 'REPORT', 'exams.class_ranklist', '{ADMIN, TENANT_ADMIN, TEACHER, STUDENT}', 30),
+        (NULL, v_menu_id, 'Marks Dist.', 'PieChart', '/reports/exams/marks', 'REPORT', 'exams.marks_distribution', '{ADMIN, TENANT_ADMIN, TEACHER}', 40),
         
         -- System
-        (NULL, v_menu_id, 'Settings', 'Settings', '/settings', 'ROUTE', NULL, '{ADMIN}', 100)
-    ON CONFLICT DO NOTHING;
+        (NULL, v_menu_id, 'Settings', 'Settings', '/settings', 'ROUTE', NULL, '{ADMIN, TENANT_ADMIN}', 100)
+    ON CONFLICT (tenant_id, menu_id, label) 
+    DO UPDATE SET 
+        required_roles = EXCLUDED.required_roles,
+        icon_name = EXCLUDED.icon_name,
+        route_path = EXCLUDED.route_path;
 
 END $$;

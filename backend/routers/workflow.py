@@ -38,11 +38,11 @@ async def trigger_transition(
     """
     try:
         await conn.execute(
-            "SELECT execute_workflow_transition($1, $2, $3, $4::uuid)",
+            "SELECT execute_workflow_transition($1, $2, $3::uuid, $4::uuid)",
             body.entity_code,
-            body.entity_record_id,
             body.target_state_code,
             body.actor_id or uuid.uuid4(),  # system actor if none
+            body.entity_record_id,
         )
         return {"status": "success", "to_state": body.target_state_code}
     except asyncpg.RaiseError as exc:
@@ -61,12 +61,18 @@ async def get_state(
     """Return the current workflow state for a given entity record."""
     row = await conn.fetchrow(
         """
-        SELECT wis.state_code, wis.entered_at, ws.label, ws.is_terminal
+        SELECT
+            ws.state_code,
+            ws.label,
+            ws.is_terminal,
+            wis.entered_at
         FROM   workflow_instance_state wis
-        JOIN   workflow_states         ws  ON ws.state_code   = wis.state_code
-                                          AND ws.tenant_id    = wis.tenant_id
-        WHERE  wis.entity_record_id = $1
-          AND  wis.entity_code      = $2
+        JOIN   workflow_states         ws  ON ws.state_id  = wis.current_state_id
+                                          AND ws.tenant_id = wis.tenant_id
+        JOIN   workflow_master         wm  ON wm.workflow_id = wis.workflow_id
+                                          AND wm.tenant_id   = wis.tenant_id
+                                          AND wm.entity_code = $2
+        WHERE  wis.record_id = $1
         ORDER  BY wis.entered_at DESC
         LIMIT  1
         """,
@@ -86,11 +92,19 @@ async def get_history(
     """Return the full immutable state-change history from workflow_state_log."""
     rows = await conn.fetch(
         """
-        SELECT state_code, previous_state_code, actor_id, transitioned_at
-        FROM   workflow_state_log
-        WHERE  entity_record_id = $1
-          AND  entity_code      = $2
-        ORDER  BY transitioned_at ASC
+        SELECT
+            ws_new.state_code          AS state_code,
+            ws_prev.state_code         AS previous_state_code,
+            wsl.actor_id,
+            wsl.transitioned_at
+        FROM   workflow_state_log wsl
+        JOIN   workflow_states ws_new  ON ws_new.state_id  = wsl.to_state_id
+                                      AND ws_new.tenant_id = wsl.tenant_id
+        LEFT JOIN workflow_states ws_prev ON ws_prev.state_id  = wsl.from_state_id
+                                         AND ws_prev.tenant_id = wsl.tenant_id
+        WHERE  wsl.record_id   = $1
+          AND  wsl.entity_code = $2
+        ORDER  BY wsl.transitioned_at ASC
         """,
         record_id, entity_code,
     )

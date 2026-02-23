@@ -237,7 +237,7 @@ CREATE TABLE IF NOT EXISTS policy_master (
     entity_id       UUID            NOT NULL,           -- Which entity this policy governs
     rule_engine     TEXT            NOT NULL DEFAULT 'json_logic', -- Evaluation engine type
     rule_definition JSONB           NOT NULL,           -- Machine-readable rule (JSON Logic etc.)
-    priority        INT             NOT NULL DEFAULT 100, -- Lower = higher priority
+    evaluation_order INT             NOT NULL DEFAULT 100, -- Lower = higher priority
     is_active       BOOLEAN         NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMPTZ     NOT NULL DEFAULT now(),
 
@@ -251,7 +251,7 @@ CREATE TABLE IF NOT EXISTS policy_master (
 COMMENT ON TABLE  policy_master                  IS 'LAW 4+5: Declarative policy registry. Evaluated BEFORE workflow transitions. Policies decide IF.';
 COMMENT ON COLUMN policy_master.rule_engine      IS 'Engine used to evaluate rule_definition (json_logic | cel | rego).';
 COMMENT ON COLUMN policy_master.rule_definition  IS 'Machine-readable predicate evaluated at runtime against the request context.';
-COMMENT ON COLUMN policy_master.priority         IS 'Evaluation order; lower number = higher priority. Ties broken by created_at.';
+COMMENT ON COLUMN policy_master.evaluation_order IS 'Evaluation order; lower number = higher priority. Ties broken by created_at.';
 
 
 -- -----------------------------------------------------------------------------
@@ -316,7 +316,7 @@ CREATE TABLE IF NOT EXISTS workflow_transitions (
     tenant_id       UUID            NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
     transition_id   UUID            NOT NULL DEFAULT gen_random_uuid(),
     workflow_id     UUID            NOT NULL,
-    from_state      TEXT            NOT NULL,           -- Source state (NULL = any)
+    from_state      TEXT,                               -- Source state (NULL = START)
     to_state        TEXT            NOT NULL,           -- Target state
     trigger_event   TEXT            NOT NULL,           -- Event name that fires this transition
     display_label   TEXT,                               -- Human readable label for this transition button
@@ -348,6 +348,7 @@ COMMENT ON COLUMN workflow_transitions.actor_roles    IS 'Array of role codes au
 -- LAW 8: No UPDATE or DELETE.
 -- -----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS workflow_state_log (
+    seq_id          BIGSERIAL       NOT NULL,
     tenant_id       UUID            NOT NULL REFERENCES tenants(tenant_id) ON DELETE RESTRICT,
     log_id          UUID            NOT NULL DEFAULT gen_random_uuid(),
     workflow_id     UUID            NOT NULL,
@@ -675,7 +676,7 @@ CREATE INDEX IF NOT EXISTS idx_entity_master_type     ON entity_master(tenant_id
 CREATE INDEX IF NOT EXISTS idx_attribute_master_entity ON attribute_master(tenant_id, entity_id);
 
 -- Layer 2 — Policy
-CREATE INDEX IF NOT EXISTS idx_policy_entity          ON policy_master(tenant_id, entity_id, priority);
+CREATE INDEX IF NOT EXISTS idx_policy_entity          ON policy_master(tenant_id, entity_id, evaluation_order);
 
 -- Layer 2 — Workflow
 CREATE INDEX IF NOT EXISTS idx_workflow_entity        ON workflow_master(tenant_id, entity_id);

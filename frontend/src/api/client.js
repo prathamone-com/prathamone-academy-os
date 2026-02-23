@@ -1,7 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8001/api/v1";
 
 export async function apiFetch(endpoint, options = {}) {
-    const token = localStorage.getItem("auth_token");
+    const token = localStorage.getItem("token");
 
     const headers = {
         "Content-Type": "application/json",

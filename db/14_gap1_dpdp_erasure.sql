@@ -155,7 +155,13 @@ CREATE INDEX IF NOT EXISTS idx_er_subject
 -- Runs as SECURITY DEFINER so it bypasses the PII guard trigger.
 -- Appends a GDPR_ERASURE_EVENT to the audit chain — does NOT break the chain.
 -- ─────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE ROLE app_cap_executor NOLOGIN;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'app_cap_executor') THEN
+        CREATE ROLE app_cap_executor NOLOGIN;
+    END IF;
+END $$;
+
 COMMENT ON ROLE app_cap_executor IS
     'LAW 09-1.4: Dedicated execution role for the Cryptographic Anonymization Protocol. '
     'Granted only to fn_execute_cap SECURITY DEFINER. No human logins.';

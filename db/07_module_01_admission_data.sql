@@ -18,19 +18,28 @@ DECLARE
 BEGIN
     -- 1. Resolve or Create Tenant
     -- For development seeding, we target the first tenant or a demo tenant.
-    SELECT tenant_id INTO v_tenant_id FROM tenants LIMIT 1;
+    -- Prefer the standard demo tenant ID if it exists, otherwise pick first
+    SELECT tenant_id INTO v_tenant_id 
+    FROM tenants 
+    WHERE tenant_id = '00000000-0000-0000-0000-000000000001';
+
+    IF v_tenant_id IS NULL THEN
+        SELECT tenant_id INTO v_tenant_id FROM tenants LIMIT 1;
+    END IF;
     
     IF v_tenant_id IS NULL THEN
-        v_tenant_id := gen_random_uuid();
+        v_tenant_id := '00000000-0000-0000-0000-000000000001'::UUID;
         INSERT INTO tenants (tenant_id, name, slug)
-        VALUES (v_tenant_id, 'Greenwood High', 'greenwood-high');
+        VALUES (v_tenant_id, 'PrathamOne International School', 'demo-prathamone-intl')
+        ON CONFLICT (tenant_id) DO NOTHING;
     END IF;
 
     -- 2. Register Entities (LAW 1)
     INSERT INTO entity_master (tenant_id, entity_type, entity_code, display_name, description)
     VALUES 
         (v_tenant_id, 'ADMISSION', 'STUDENT_APPLICATION', 'Student Application', 'Initial application for admission'),
-        (v_tenant_id, 'ACADEMIC',  'STUDENT',             'Student',             'Registered student record');
+        (v_tenant_id, 'ACADEMIC',  'STUDENT',             'Student',             'Registered student record')
+    ON CONFLICT (tenant_id, entity_code) DO NOTHING;
 
     -- Note: Retunning inside a loop or multi-insert is tricky in PL/pgSQL for multiple vars.
     -- Better to fetch them individually for clarity.
@@ -76,6 +85,7 @@ BEGIN
     -- Transitions
     INSERT INTO workflow_transitions (tenant_id, workflow_id, from_state, to_state, trigger_event, display_label, actor_roles)
     VALUES
+        (v_tenant_id, v_workflow_id, NULL,                  'DRAFT',               'START',            'Initialise',         '{SYSTEM, ADMIN}'),
         (v_tenant_id, v_workflow_id, 'DRAFT',               'SUBMITTED',           'SUBMIT',           'Submit Application', '{APPLICANT, ADMIN}'),
         (v_tenant_id, v_workflow_id, 'SUBMITTED',           'DOCUMENT_VERIFIED',   'VERIFY_DOCS',      'Verify Documents',   '{ADMIN, ADMISSION_OFFICER}'),
         (v_tenant_id, v_workflow_id, 'DOCUMENT_VERIFIED',   'ENTRANCE_SCHEDULED',  'SCHEDULE_TEST',    'Schedule Entrance',  '{ADMISSION_OFFICER}'),

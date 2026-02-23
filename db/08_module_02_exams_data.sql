@@ -13,8 +13,11 @@ DECLARE
     v_entity_att_id  UUID;
     v_workflow_id    UUID;
 BEGIN
-    -- 1. Resolve Tenant
-    SELECT tenant_id INTO v_tenant_id FROM tenants LIMIT 1;
+    -- 1. Resolve Tenant (Prefer demo tenant)
+    SELECT tenant_id INTO v_tenant_id FROM tenants WHERE tenant_id = '00000000-0000-0000-0000-000000000001';
+    IF v_tenant_id IS NULL THEN
+        SELECT tenant_id INTO v_tenant_id FROM tenants LIMIT 1;
+    END IF;
     
     -- 2. Register Entities (LAW 1)
     INSERT INTO entity_master (tenant_id, entity_type, entity_code, display_name, description)

@@ -18,9 +18,11 @@ Public paths (listed in EXEMPT_PATHS) bypass JWT validation so that
 the login endpoint can be reached unauthenticated.
 """
 
-from __future__ import annotations
-
+import logging
+import os
 from typing import Awaitable, Callable
+
+logger = logging.getLogger(__name__)
 
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
@@ -71,68 +73,45 @@ async def tenant_middleware(
 
     Registered in main.py via ``app.middleware("http")(tenant_middleware)``.
     """
-    # --- Pure passthrough: no auth, no context (CORS pre-flight, docs, health) ---
+    # --- 1. Protocol Bypass (CORS, root, health) ---
     if (
         request.method == "OPTIONS"
         or request.url.path in EXEMPT_PATHS
-        or request.url.path.startswith("/docs")
-        or request.url.path.startswith("/redoc")
         or request.url.path in ("/", "/api/v1", "/api/v1/", "/favicon.ico")
     ):
         return await call_next(request)
 
-    # --- Public read-only app-shell routes (menus, forms) ---
-    # These are structural metadata endpoints the frontend needs before login.
-    # They are not tenant-security boundaries — menus/forms are system-level data.
-    # We inject the system tenant context with a minimal role (app_user, NOT admin).
-    # LAW 7 is not violated: tenant_id still comes from the server (env var), never the client.
-    if (
-        request.url.path.startswith("/api/v1/menus/")
-        or request.url.path.startswith("/api/v1/forms/")
-    ):
-        import os
-        request.state.tenant_id = os.getenv("SYSTEM_TENANT_ID", "00000000-0000-0000-0000-000000000000")
-        request.state.role = "app_user"
-        request.state.user_id = None
-        return await call_next(request)
-
-    # --- All remaining routes require a valid JWT (LAW 7) ---
-    # /entities/, /reports/, /workflow/, /policy/ all fall through to here.
-
+    # --- 2. Attempt Identity Extraction (LAW 7) ---
     authorization: str = request.headers.get("Authorization", "")
-    if not authorization.startswith("Bearer "):
-        print(f"DEBUG: Unauthorized access attempt to {request.method} {request.url.path}")
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "Missing or malformed Authorization header. Expected: Bearer <token>"},
-        )
+    token = authorization.removeprefix("Bearer ").strip() if authorization.startswith("Bearer ") else None
+    
+    payload = None
+    if token:
+        try:
+            payload = jwt.decode(token, auth_settings.secret_key, algorithms=[auth_settings.algorithm])
+            request.state.tenant_id = payload.get("tenant_id")
+            request.state.user_id = payload.get("sub")
+            request.state.role = payload.get("role", "app_user")
+            logger.debug("JWT validated for path %s", request.url.path)
+        except JWTError as exc:
+            logger.debug("JWT validation failed for path %s: %s", request.url.path, type(exc).__name__)
 
-    token = authorization.removeprefix("Bearer ").strip()
+    # --- 3. Public Metadata Fallback (menus/forms) ---
+    # If no valid identity found and it's a metadata path, use system context
+    is_metadata_path = (request.url.path.startswith("/api/v1/menus/") or request.url.path.startswith("/api/v1/forms/"))
+    
+    if not getattr(request.state, "tenant_id", None):
+        if is_metadata_path:
+            request.state.tenant_id = os.getenv("SYSTEM_TENANT_ID", "00000000-0000-0000-0000-000000000000")
+            request.state.role = "app_user"
+            request.state.user_id = None
+        else:
+            # Not a metadata path and no valid token
+            detail = "Invalid or expired token" if token else "Missing Authorization header"
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": detail})
 
-    # --- Validate token ---
-    try:
-        payload: dict = jwt.decode(
-            token,
-            auth_settings.secret_key,
-            algorithms=[auth_settings.algorithm],
-        )
-    except JWTError as exc:
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": f"Invalid or expired token: {exc}"},
-        )
-
-    # --- Extract tenant_id from JWT claims (NEVER from request body) ---
-    tenant_id: str | None = payload.get("tenant_id")
-    if not tenant_id:
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"detail": "JWT is missing required claim: tenant_id"},
-        )
-
-    # Store on request state — db.py reads this to set the GUC
-    request.state.tenant_id = tenant_id
-    request.state.user_id = payload.get("sub")
-    request.state.role = payload.get("role", "app_user")
+    # --- 4. Final Security Check (LAW 7) ---
+    if not request.state.tenant_id:
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Tenant identification failed"})
 
     return await call_next(request)

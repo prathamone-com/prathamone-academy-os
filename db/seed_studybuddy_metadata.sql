@@ -4,12 +4,12 @@
 
 BEGIN;
 
-SET LOCAL app.tenant_id = 'd588318d-f7bd-4586-9f55-1e60dec907ae';
+SET LOCAL app.tenant_id = '00000000-0000-0000-0000-000000000001';
 
 -- 1. Register AI Capability (LAW SB-1)
 INSERT INTO ai_capability_master (tenant_id, capability_code, display_name, decision_scope)
 VALUES (
-    'd588318d-f7bd-4586-9f55-1e60dec907ae',
+    '00000000-0000-0000-0000-000000000001',
     'STUDENT_STUDY_BUDDY',
     'AI Studybuddy',
     'ASSISTIVE'
@@ -21,9 +21,10 @@ VALUES (
 DO $$
 DECLARE
     v_cap_id UUID;
-    v_tenant_id UUID := 'd588318d-f7bd-4586-9f55-1e60dec907ae';
-    v_menu_id UUID := 'f6067381-9488-4989-bf73-ae774b323948';
+    v_tenant_id UUID := '00000000-0000-0000-0000-000000000001';
+    v_menu_id   UUID;
 BEGIN
+    SELECT menu_id INTO v_menu_id FROM menu_master WHERE menu_code = 'SIDEBAR_NAV' AND tenant_id IS NULL;
     SELECT capability_id INTO v_cap_id FROM ai_capability_master
     WHERE capability_code = 'STUDENT_STUDY_BUDDY' AND tenant_id = v_tenant_id;
 

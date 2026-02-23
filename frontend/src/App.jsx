@@ -14,28 +14,42 @@ import DynamicForm from './components/DynamicForm';
 import ReportViewer from './components/ReportViewer';
 import WorkflowActions from './components/WorkflowActions';
 import LandingPage from './pages/LandingPage';
-import { Bell, User, LogOut, Search, Settings, ChevronRight, Menu as MenuIcon, X } from 'lucide-react';
+import LoginPage from './pages/LoginPage';
+import FeeLedger from './components/FeeLedger';
+import ProtectedRoute from './components/ProtectedRoute';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { Bell, User, LogOut, Search, Settings, ChevronRight, Menu as MenuIcon, X, LayoutDashboard } from 'lucide-react';
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingWrapper />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <AuthProvider>
+      <Routes>
+        <Route path="/" element={<LandingWrapper />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AuthProvider>
   );
 }
 
 function LandingWrapper() {
   const navigate = useNavigate();
-  return <LandingPage onEnter={() => navigate('/dashboard')} />;
+  return <LandingPage onEnter={() => navigate('/login')} />;
 }
 
 function Dashboard() {
   const [activeItem, setActiveItem] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const addNotify = (message, type = 'info') => {
     const id = Date.now();
@@ -78,13 +92,16 @@ function Dashboard() {
               Authorized access to {activeItem.label.toLowerCase()} subsystem. Encrypted data stream active.
             </p>
           </div>
-          <div className="relative z-10">
-            <WorkflowActions
-              entityCode="ENROLLMENT"
-              recordId="00000000-0000-0000-0000-000000000000"
-              onNotify={addNotify}
-            />
-          </div>
+          {/* Workflow actions only shown when a record context is known */}
+          {activeItem?.action_type === 'WORKFLOW' && activeItem?.action_target && (
+            <div className="relative z-10">
+              <WorkflowActions
+                entityCode={activeItem.entity_code || 'STUDENT_APPLICATION'}
+                recordId={activeItem.action_target}
+                onNotify={addNotify}
+              />
+            </div>
+          )}
         </header>
 
         <main className="transition-all duration-500">
@@ -96,6 +113,8 @@ function Dashboard() {
             <div className="premium-card overflow-hidden bg-navy-lighter/40 backdrop-blur-md">
               <ReportViewer reportCode={activeItem.action_target} onNotify={addNotify} />
             </div>
+          ) : activeItem.action_type === 'ROUTE' && activeItem.action_target === 'FEE_LEDGER' ? (
+            <FeeLedger onNotify={addNotify} />
           ) : (
             <div className="premium-card p-16 flex flex-col items-center justify-center min-h-[50vh] bg-navy-lighter/30">
               <div className="w-20 h-20 bg-navy-deep border border-gold/10 rounded-2xl flex items-center justify-center text-gold/20 mb-6 shadow-gold">
@@ -165,12 +184,12 @@ function Dashboard() {
                 <User className="text-gold/40 w-6 h-6 group-hover:text-gold transition-colors" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-white truncate">Demo User</p>
-                <p className="text-[10px] text-gold/40 font-mono font-medium uppercase tracking-[0.1em] mt-0.5">Sovereign Admin</p>
+                <p className="text-sm font-bold text-white truncate">{user?.userId?.slice(-8) ?? 'Principal'}</p>
+                <p className="text-[10px] text-gold/40 font-mono font-medium uppercase tracking-[0.1em] mt-0.5">{user?.role ?? 'app_user'}</p>
               </div>
             </div>
             <button
-              onClick={() => navigate('/')}
+              onClick={logout}
               className="w-full flex items-center justify-center gap-2 py-3 bg-navy-deep border border-gold/10 hover:border-red-500/30 hover:text-red-500 rounded-xl text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest transition-all duration-300 active:scale-95"
             >
               <LogOut size={12} />

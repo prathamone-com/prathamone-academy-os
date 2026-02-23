@@ -1,6 +1,10 @@
+import logging
+
 import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Request
 from db import db_conn
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/menus", tags=["menus"])
 
@@ -16,6 +20,14 @@ async def get_menu(
     # For demo purposes, if no JWT is present, default to 'ADMIN' to see all items.
     # In production, this would be 'app_user' or would require a token.
     role = getattr(request.state, "role", "ADMIN")
+
+    # Normalise legacy/alias role names to their canonical RBAC equivalents
+    _ROLE_ALIASES = {
+        "principal_admin": "TENANT_ADMIN",
+        "admin":           "ADMIN",
+    }
+    role = _ROLE_ALIASES.get(role.lower() if role else "", role)
+    logger.debug("get_menu: code=%s", menu_code)
     # 1. Fetch menu items
     # Note: We filter by role client-side OR here. Better here for security.
     rows = await conn.fetch(

@@ -100,21 +100,32 @@ async def _check_permission(
     """
     role: str = getattr(request.state, "role", "app_user")
 
-    row = await conn.fetchrow(
-        """
-        SELECT rp.is_allowed
-        FROM   role_permissions rp
-        JOIN   permissions      p  ON p.permission_id = rp.permission_id
-                                  AND p.tenant_id     = rp.tenant_id
-        JOIN   roles            r  ON r.role_id       = rp.role_id
-                                  AND r.tenant_id     = rp.tenant_id
-        WHERE  r.role_code        = $1
-          AND  p.entity_code      = $2
-          AND  p.operation        = $3
-        LIMIT  1
-        """,
-        role, entity_code, operation,
-    )
+    try:
+        row = await conn.fetchrow(
+            """
+            SELECT rp.is_allowed
+            FROM   role_permissions rp
+            JOIN   permissions      p  ON p.permission_id = rp.permission_id
+                                      AND p.tenant_id     = rp.tenant_id
+            JOIN   roles            r  ON r.role_id       = rp.role_id
+                                      AND r.tenant_id     = rp.tenant_id
+            WHERE  r.role_code        = $1
+              AND  p.entity_code      = $2
+              AND  p.operation        = $3
+            LIMIT  1
+            """,
+            role, entity_code, operation,
+        )
+    except asyncpg.UndefinedTableError as exc:
+        # role_permissions / roles / permissions tables not yet provisioned.
+        # Fall back to a simple coarse-grained role check so the app stays functional.
+        print(f"WARN: role_permissions table missing ({exc}); using role fallback gate.")
+        if role in ("TENANT_ADMIN", "ADMIN"):
+            return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Role '{role}' is not authorised for {operation} on '{entity_code}'.",
+        )
 
     if row is None or not row["is_allowed"]:
         raise HTTPException(
@@ -315,6 +326,9 @@ async def _fetch_eav(
     """
     Return {attribute_code: resolved_value} for a single record.
     Value is resolved from the first non-null column (text > numeric > bool > json).
+
+    LAW 2/5: Column name is eav.record_id (not entity_record_id).
+    Matches the physical schema and the sibling _fetch_eav_full helper.
     """
     rows = await conn.fetch(
         """
@@ -331,7 +345,7 @@ async def _fetch_eav(
         FROM   entity_attribute_values eav
         JOIN   attribute_master        am  ON am.attribute_code = eav.attribute_code
                                            AND am.tenant_id      = eav.tenant_id
-        WHERE  eav.entity_record_id = $1
+        WHERE  eav.record_id = $1
         ORDER  BY am.sort_order NULLS LAST, eav.attribute_code
         """,
         record_id,
@@ -359,7 +373,7 @@ async def _fetch_eav_full(
         FROM   entity_attribute_values eav
         JOIN   attribute_master        am  ON am.attribute_code = eav.attribute_code
                                            AND am.tenant_id      = eav.tenant_id
-        WHERE  eav.entity_record_id = $1
+        WHERE  eav.record_id = $1
         ORDER  BY am.sort_order NULLS LAST, eav.attribute_code
         """,
         record_id,

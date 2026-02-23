@@ -42,7 +42,8 @@ CREATE TABLE IF NOT EXISTS menu_items (
     sort_order      INT             NOT NULL DEFAULT 0,
     is_active       BOOLEAN         NOT NULL DEFAULT TRUE,
 
-    CONSTRAINT pk_menu_items PRIMARY KEY (item_id)
+    CONSTRAINT pk_menu_items PRIMARY KEY (item_id),
+    CONSTRAINT uq_menu_item UNIQUE (tenant_id, menu_id, label)
 );
 
 -- RLS

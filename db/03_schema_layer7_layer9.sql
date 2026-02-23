@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS system_settings (
     setting_id          UUID        NOT NULL DEFAULT gen_random_uuid(),
     setting_category    TEXT        NOT NULL
                             CHECK (setting_category IN (
-                                'ACADEMIC','FINANCE','UI','SYSTEM','AI','INTEGRATION'
+                                'ACADEMIC','FINANCE','FINANCIAL','UI','SYSTEM','AI','INTEGRATION'
                             )),
     setting_key         TEXT        NOT NULL,
     -- Dot-namespaced key: e.g. 'academic.grading.passing_threshold'

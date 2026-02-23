@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS report_master (
     description         TEXT,
     report_category     TEXT        NOT NULL
                             CHECK (report_category IN (
-                                'ACADEMIC','FINANCE','AI','OPERATIONS',
+                                'ACADEMIC','FINANCE','FINANCIAL','AI','OPERATIONS',
                                 'COMPLIANCE','CUSTOM'
                             )),
     primary_entity_id   UUID        NOT NULL,
