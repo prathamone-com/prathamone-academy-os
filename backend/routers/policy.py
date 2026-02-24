@@ -34,7 +34,25 @@ class EvaluationResult(BaseModel):
     reason: str | None = None
 
 
+@router.get("/", summary="List all active policies")
+async def list_policies(
+    conn: asyncpg.Connection = Depends(db_conn),
+) -> list[dict]:
+    """Return all policy definitions visible to the current tenant."""
+    rows = await conn.fetch(
+        """
+        SELECT policy_code, display_name, rule_engine, evaluation_order, is_active
+        FROM   policy_master
+        WHERE  is_active = true
+        ORDER  BY evaluation_order, display_name
+        """
+    )
+    return [dict(r) for r in rows]
+
+
+
 @router.post("/evaluate", response_model=EvaluationResult, summary="Evaluate a policy against an entity record")
+
 async def evaluate_policy(
     body: EvaluationRequest,
     conn: asyncpg.Connection = Depends(db_conn),

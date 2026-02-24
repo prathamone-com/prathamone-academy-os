@@ -242,7 +242,7 @@ class PolicyEngine:
         entity_code: str,
         record_id: uuid.UUID,
         action_type: str,
-        context: dict[str, Any] = {},
+        context: dict[str, Any] | None = None,   # mutable default avoided
         actor_id: str | None = None,
     ) -> PolicyResult:
         """
@@ -259,9 +259,11 @@ class PolicyEngine:
         """
         result = PolicyResult()
 
+        effective_context = context or {}
+
         # 1. Load entity's EAV values
         eav = await self._load_eav(record_id)
-        eav.update(context)           # runtime context overrides DB values
+        eav.update(effective_context)  # runtime context overrides DB values
 
         # 2. Load all applicable policies (tenant + SYSTEM inherited)
         policies = await self._load_policies(entity_code, action_type)
@@ -304,9 +306,9 @@ class PolicyEngine:
             # Load and execute actions for this policy
             actions = await self._load_actions(policy_code)
             for action in actions:
-                act_type    = action["action_type"]     # BLOCK | WARN | ALLOW | CALCULATE
+                act_type    = action["action_type"]     # BLOCK_TRANSITION | SEND_NOTIFICATION | etc.
                 act_payload = action["action_payload"]  # JSONB dict or None
-                message     = action["message"] or label
+                message     = label                      # display_name from policy_master
 
                 if act_type == "BLOCK":
                     result.decision = "BLOCK"
@@ -363,18 +365,18 @@ class PolicyEngine:
         rows = await self._conn.fetch(
             """
             SELECT
-                eav.attribute_code,
+                am.attribute_code,
                 CASE am.data_type
-                    WHEN 'numeric' THEN eav.value_numeric::text
+                    WHEN 'numeric' THEN eav.value_number::text
                     WHEN 'boolean' THEN eav.value_bool::text
-                    WHEN 'json'    THEN eav.value_json::text
+                    WHEN 'json'    THEN eav.value_jsonb::text
                     ELSE                eav.value_text
                 END AS resolved_value
             FROM   entity_attribute_values eav
             JOIN   attribute_master        am
-                   ON am.attribute_code = eav.attribute_code
-                  AND am.tenant_id      = eav.tenant_id
-            WHERE  eav.entity_record_id = $1
+                   ON am.attribute_id = eav.attribute_id   -- LAW 2: join by PK, not code
+                  AND am.tenant_id    = eav.tenant_id
+            WHERE  eav.record_id = $1
             """,
             record_id,
         )
@@ -386,50 +388,58 @@ class PolicyEngine:
         action_type: str,
     ) -> list[asyncpg.Record]:
         """
-        Load all active policies for this entity + action.
+        Load all active policies for this entity.
 
         Includes:
           • Tenant-specific rows  (tenant_id = current GUC)   — higher priority
           • SYSTEM-inherited rows (tenant_id IS NULL)          — fallback / base rules
 
         Ordered by: SYSTEM first (lowest priority), then tenant-specific.
-        Within each group, ordered by priority_order ASC.
+        Within each group, ordered by evaluation_order ASC.
+
+        Note: policy_master has no action_type column; action_type is accepted
+        for interface compatibility but filtering is done by entity only.
         """
         return await self._conn.fetch(
             """
             SELECT
                 pm.policy_code,
-                pm.label,
-                pm.priority_order,
+                pm.display_name AS label,
+                pm.evaluation_order,
                 pm.tenant_id,
-                pc.condition_dsl
+                pc.dsl_expression AS condition_dsl
             FROM   policy_master pm
+            JOIN   entity_master em
+                   ON em.entity_id = pm.entity_id
+                  AND em.tenant_id = pm.tenant_id
             LEFT JOIN policy_conditions pc
-                   ON pc.policy_code = pm.policy_code
-                  AND pc.tenant_id   = pm.tenant_id
-            WHERE  pm.entity_code  = $1
-              AND  pm.action_type  = $2
+                   ON pc.policy_id  = pm.policy_id
+                  AND pc.tenant_id  = pm.tenant_id
+            WHERE  em.entity_code  = $1
               AND  pm.is_active    = true
               AND  (
                        pm.tenant_id = current_setting('app.tenant_id', true)::uuid
                    OR  pm.tenant_id IS NULL
               )
             ORDER BY
-                (pm.tenant_id IS NULL) DESC,   -- NULL (SYSTEM) first = lowest priority
-                pm.priority_order ASC
+                (pm.tenant_id IS NULL) DESC,      -- NULL (SYSTEM) first = lowest priority
+                pm.evaluation_order ASC
             """,
             entity_code,
-            action_type,
         )
 
     async def _load_actions(self, policy_code: str) -> list[asyncpg.Record]:
-        """Load policy_actions rows for a given policy_code, ordered by sort_order."""
+        """Load policy_actions rows for a given policy_code, ordered by priority."""
         return await self._conn.fetch(
             """
-            SELECT action_type, action_payload, message
-            FROM   policy_actions
-            WHERE  policy_code = $1
-            ORDER  BY sort_order ASC
+            SELECT pa.action_type, pa.action_payload, pa.outcome
+            FROM   policy_actions pa
+            JOIN   policy_master  pm
+                   ON pm.policy_id = pa.policy_id
+                  AND pm.tenant_id = pa.tenant_id
+            WHERE  pm.policy_code = $1
+              AND  pa.is_active   = true
+            ORDER  BY pa.priority ASC
             """,
             policy_code,
         )
@@ -457,15 +467,22 @@ class PolicyEngine:
             "reasons":          result.reasons,
             "calculations":     result.calculations,
         }
+        # LAW 8: INSERT-ONLY — never UPDATE or DELETE on audit tables
         await self._conn.execute(
             """
             INSERT INTO audit_event_log
-                (tenant_id, actor_id, action_type,
-                 entity_code, entity_record_id, payload, created_at)
+                (tenant_id, actor_id, actor_type,
+                 event_category, event_type,
+                 entity_id, record_id, event_data, logged_at)
             VALUES
                 (current_setting('app.tenant_id', true)::uuid,
-                 $1::uuid, 'POLICY_EVALUATED',
-                 $2, $3, $4::jsonb, now())
+                 $1::uuid, 'SERVICE',
+                 'POLICY', 'POLICY_EVALUATED',
+                 (SELECT entity_id FROM entity_master
+                  WHERE entity_code = $2
+                    AND tenant_id = current_setting('app.tenant_id', true)::uuid
+                  LIMIT 1),
+                 $3, $4::jsonb, now())
             """,
             actor_id,
             entity_code,

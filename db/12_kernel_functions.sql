@@ -38,7 +38,9 @@ BEGIN
         -- Resolve attribute metadata to route value to correct typed column
         SELECT attribute_id, data_type INTO v_attr_meta
         FROM attribute_master
-        WHERE attribute_code = v_attr->>'attribute_code' AND tenant_id = v_tenant_id;
+        WHERE attribute_code = v_attr->>'attribute_code' 
+          AND tenant_id = v_tenant_id
+          AND entity_id = v_entity_id;
 
         IF NOT FOUND THEN
             CONTINUE; 
@@ -124,7 +126,9 @@ BEGIN
     LOOP
         SELECT attribute_id, data_type INTO v_attr_meta
         FROM attribute_master
-        WHERE attribute_code = v_attr->>'attribute_code' AND tenant_id = v_tenant_id;
+        WHERE attribute_code = v_attr->>'attribute_code' 
+          AND tenant_id = v_tenant_id
+          AND entity_id = v_entity_id;
 
         IF NOT FOUND THEN CONTINUE; END IF;
 

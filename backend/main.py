@@ -33,7 +33,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from db import init_pool, close_pool
 from middleware.tenant import tenant_middleware
-from routers import auth, entities, workflow, policy, reports, forms, menus, fees
+from routers import auth, entities, workflow, policy, reports, forms, menus, fees, dashboard, attendance
 
 
 # ---------------------------------------------------------------------------
@@ -100,6 +100,8 @@ app.include_router(reports.router,  prefix=API_PREFIX)
 app.include_router(forms.router,    prefix=API_PREFIX)
 app.include_router(menus.router,    prefix=API_PREFIX)
 app.include_router(fees.router,     prefix=API_PREFIX)
+app.include_router(dashboard.router,prefix=API_PREFIX)
+app.include_router(attendance.router,prefix=API_PREFIX)
 
 
 # ---------------------------------------------------------------------------

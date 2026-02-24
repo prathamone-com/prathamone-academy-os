@@ -22,10 +22,19 @@ async def get_form_metadata(
 ) -> dict:
     """
     Returns the full structure of a form: sections and fields.
+    Includes entity_code from entity_master so the frontend can POST without
+    hardcoding any entity identifiers (LAW UI-7).
     """
-    # 1. Fetch form master
+    # 1. Fetch form master + entity_code from entity_master join
     form = await conn.fetchrow(
-        "SELECT * FROM form_master WHERE form_code = $1 AND is_active = TRUE",
+        """
+        SELECT fm.*, em.entity_code
+        FROM   form_master fm
+        JOIN   entity_master em ON em.entity_id = fm.entity_id
+                                AND em.tenant_id = fm.tenant_id
+        WHERE  fm.form_code = $1
+          AND  fm.is_active = TRUE
+        """,
         form_code,
     )
     if not form:
@@ -39,21 +48,27 @@ async def get_form_metadata(
         form_id,
     )
 
-    # 3. Fetch fields for each section
-    # We join with attribute_master to get data_type and validation_rule
+    # 3. Fetch fields for each section, including attribute label + validation_rule
     results = []
     for section in sections:
         fields = await conn.fetch(
             """
-            SELECT ff.*, am.attribute_code, am.data_type, am.validation_rule as base_validation
+            SELECT
+                ff.*,
+                am.attribute_code,
+                am.display_label    AS attr_display_label,
+                am.data_type,
+                am.validation_rule  AS base_validation,
+                am.is_required      AS attr_required
             FROM   form_fields ff
             JOIN   attribute_master am ON am.attribute_id = ff.attribute_id
+                                      AND am.tenant_id    = ff.tenant_id
             WHERE  ff.section_id = $1
             ORDER BY ff.sort_order
             """,
             section["section_id"],
         )
-        
+
         results.append({
             "section": dict(section),
             "fields": [dict(f) for f in fields]
@@ -63,3 +78,4 @@ async def get_form_metadata(
         "form": dict(form),
         "structure": results
     }
+

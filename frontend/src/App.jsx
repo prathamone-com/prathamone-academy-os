@@ -18,6 +18,8 @@ import LoginPage from './pages/LoginPage';
 import FeeLedger from './components/FeeLedger';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import IntelligenceWidgets from './components/IntelligenceWidgets';
+import AttendanceMarker from './components/AttendanceMarker';
 import { Bell, User, LogOut, Search, Settings, ChevronRight, Menu as MenuIcon, X, LayoutDashboard } from 'lucide-react';
 
 function App() {
@@ -62,15 +64,30 @@ function Dashboard() {
   const renderContent = () => {
     if (!activeItem) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[70vh] text-slate-400 p-8">
-          <div className="w-32 h-32 bg-navy-lighter rounded-3xl border border-gold/10 flex items-center justify-center shadow-gold mb-8 relative group cursor-none">
-            <div className="absolute inset-0 bg-gold/5 rounded-3xl blur-2xl group-hover:bg-gold/10 transition-all"></div>
-            <LayoutDashboard size={64} className="text-gold/20 relative z-10" />
+        <div className="space-y-16 p-6 md:p-12 max-w-7xl mx-auto">
+          <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative">
+            <div>
+              <nav className="flex items-center gap-2 text-[10px] font-mono font-medium text-teal-bright uppercase tracking-[0.2em] mb-4">
+                <span className="opacity-50 text-white">System</span>
+                <ChevronRight size={10} />
+                <span>Intelligence Dash</span>
+              </nav>
+              <h1 className="text-5xl font-serif font-black text-white tracking-tight leading-none mb-3">
+                Sovereign Terminal
+              </h1>
+              <p className="text-slate-400 font-light tracking-wide max-w-lg">
+                Authorized access to institutional intelligence. Encrypted data streams active.
+              </p>
+            </div>
+          </header>
+
+          <IntelligenceWidgets />
+
+          <div className="pt-12 border-t border-gold/10">
+            <div className="flex flex-col items-center justify-center text-slate-400 p-8 bg-navy-lighter/20 rounded-3xl border border-gold/5 border-dashed">
+              <p className="font-mono text-[10px] uppercase tracking-[0.3em] opacity-40">Awaiting module focus</p>
+            </div>
           </div>
-          <h2 className="text-3xl font-serif font-bold text-white mb-3">Sovereign Terminal</h2>
-          <p className="font-light text-slate-400 flex items-center gap-2 tracking-wide uppercase text-xs">
-            Initialize a module from the sidebar to begin operations
-          </p>
         </div>
       );
     }
@@ -115,6 +132,8 @@ function Dashboard() {
             </div>
           ) : activeItem.action_type === 'ROUTE' && activeItem.action_target === 'FEE_LEDGER' ? (
             <FeeLedger onNotify={addNotify} />
+          ) : activeItem.action_type === 'ROUTE' && activeItem.action_target === 'ATTENDANCE_MARKER' ? (
+            <AttendanceMarker onNotify={addNotify} />
           ) : (
             <div className="premium-card p-16 flex flex-col items-center justify-center min-h-[50vh] bg-navy-lighter/30">
               <div className="w-20 h-20 bg-navy-deep border border-gold/10 rounded-2xl flex items-center justify-center text-gold/20 mb-6 shadow-gold">

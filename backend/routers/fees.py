@@ -25,6 +25,7 @@ CONSTITUTIONAL COMPLIANCE:
 
 from __future__ import annotations
 
+import json
 import logging
 import uuid
 from datetime import date
@@ -196,6 +197,7 @@ async def _compute_balance(
     demanded = Decimal(str(demanded_row["amount_demanded"])) if demanded_row else Decimal("0")
 
     # Sum all ledger entries for this demand
+    # asyncpg cannot coerce uuid.UUID to TEXT — pass str explicitly
     ledger_rows = await conn.fetch(
         """
         SELECT
@@ -216,11 +218,11 @@ async def _compute_balance(
                                         AND dam.tenant_id    = d.tenant_id
                                         AND dam.attribute_code = 'demand_record_id'
               WHERE  d.record_id  = er.record_id
-                AND  d.value_text = $1::TEXT
+                AND  d.value_text = $1
           )
         GROUP BY er.record_id
         """,
-        demand_id,
+        str(demand_id),  # must be str — asyncpg rejects uuid.UUID for TEXT params
     )
 
     total_paid = Decimal("0")
@@ -284,12 +286,12 @@ async def _get_ledger_timeline(
                                         AND dam.tenant_id    = d.tenant_id
                                         AND dam.attribute_code = 'demand_record_id'
               WHERE  d.record_id  = er.record_id
-                AND  d.value_text = $1::TEXT
+                AND  d.value_text = $1
           )
         GROUP BY er.record_id, er.created_at
         ORDER BY er.created_at ASC
         """,
-        demand_id,
+        str(demand_id),  # must be str — asyncpg rejects uuid.UUID for TEXT params
     )
     return [dict(r) for r in rows]
 
@@ -336,7 +338,6 @@ async def raise_fee_demand(
     if body.notes:
         attributes.append({"attribute_code": "notes", "value": body.notes})
 
-    import json
     demand_id = await conn.fetchval(
         "SELECT create_entity_record($1, $2, $3::uuid)",
         "FEE_DEMAND",
@@ -461,7 +462,6 @@ async def record_payment(
     The record's state is determined by querying available transitions — we
     do NOT check `if current_state == 'SOME_STRING'` in Python.
     """
-    import json
     actor_id: str | None = getattr(request.state, "user_id", None)
     role: str = getattr(request.state, "role", "app_user")
 
@@ -582,7 +582,6 @@ async def apply_concession(
     request: Request,
     conn: asyncpg.Connection = Depends(db_conn),
 ) -> dict:
-    import json
     actor_id: str | None = getattr(request.state, "user_id", None)
     role: str = getattr(request.state, "role", "")
 
@@ -677,7 +676,6 @@ async def initiate_refund(
     request: Request,
     conn: asyncpg.Connection = Depends(db_conn),
 ) -> dict:
-    import json
     actor_id: str | None = getattr(request.state, "user_id", None)
     role: str = getattr(request.state, "role", "")
 

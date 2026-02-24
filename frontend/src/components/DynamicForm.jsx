@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { apiFetch } from '../api/client';
-import { AlertCircle, CheckCircle2, Loader2, Save } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, Save, ChevronDown } from 'lucide-react';
 
 /**
  * DynamicForm.jsx
@@ -81,22 +81,30 @@ const DynamicForm = ({ formCode, onNotify }) => {
 
         setSubmitting(true);
         try {
-            // LAW 2: Transform flat formData into the array shape expected by
-            // EntityCreateRequest: [{ attribute_code, value }, ...]
-            // This keeps the frontend free of schema concerns (attribute_code is
-            // already the key used throughout the EAV form rendering).
-            const attributesPayload = Object.entries(formData).map(([attribute_code, value]) => ({
-                attribute_code,
-                value,
-            }));
-            const res = await apiFetch(`/entities/${metadata.form.entity_code}/records`, {
-                method: "POST",
+            // LAW 2: Transform flat formData into EAV array for the entity kernel
+            const attributesPayload = Object.entries(formData)
+                .filter(([, v]) => v !== '' && v !== null && v !== undefined)
+                .map(([attribute_code, value]) => ({ attribute_code, value }));
+
+            // entity_code comes from form metadata join — never hardcoded (LAW UI-7)
+            const entityCode = metadata.form.entity_code;
+            if (!entityCode) {
+                throw new Error('Form metadata is missing entity_code — cannot submit.');
+            }
+            const res = await apiFetch(`/entities/${entityCode}/records`, {
+                method: 'POST',
                 body: JSON.stringify({ attributes: attributesPayload })
             });
-            onNotify?.("Record created successfully", "success");
-            onNotify?.(`Record ID: ${res.record_id}`, "info");
+            onNotify?.('Application submitted successfully', 'success');
+            onNotify?.(`Record ID: ${res.record_id}`, 'info');
+            // Reset form
+            const blank = {};
+            metadata.structure.forEach(sec =>
+                sec.fields.forEach(f => { blank[f.attribute_code] = f.default_value || ''; })
+            );
+            setFormData(blank);
         } catch (err) {
-            onNotify?.(err.message, "error");
+            onNotify?.(err.message, 'error');
         } finally {
             setSubmitting(false);
         }
@@ -155,50 +163,87 @@ const DynamicForm = ({ formCode, onNotify }) => {
                                         )}
                                     </div>
 
+                                    {/* TEXT INPUT */}
                                     {field.widget_type === 'text_input' && (
                                         <input
                                             type="text"
                                             className="input-standard"
-                                            value={formData[field.attribute_code] || ""}
+                                            value={formData[field.attribute_code] || ''}
                                             onChange={(e) => handleChange(e, field.attribute_code)}
-                                            placeholder={field.placeholder || "Null_String..."}
+                                            placeholder={field.placeholder || ''}
                                         />
                                     )}
 
+                                    {/* NUMBER INPUT */}
                                     {field.widget_type === 'number_input' && (
                                         <input
                                             type="number"
+                                            step="0.01"
                                             className="input-standard font-mono"
-                                            value={formData[field.attribute_code] || ""}
+                                            value={formData[field.attribute_code] || ''}
                                             onChange={(e) => handleChange(e, field.attribute_code)}
-                                            placeholder="0x00"
+                                            placeholder={field.placeholder || '0'}
                                         />
                                     )}
 
+                                    {/* DATE PICKER */}
                                     {field.widget_type === 'date_picker' && (
                                         <input
                                             type="date"
                                             className="input-standard font-mono"
-                                            value={formData[field.attribute_code] || ""}
+                                            value={formData[field.attribute_code] || ''}
                                             onChange={(e) => handleChange(e, field.attribute_code)}
                                         />
                                     )}
 
+                                    {/* TEXTAREA */}
                                     {field.widget_type === 'textarea' && (
                                         <textarea
                                             className="input-standard min-h-[160px] resize-none py-5 leading-relaxed font-light"
-                                            value={formData[field.attribute_code] || ""}
+                                            value={formData[field.attribute_code] || ''}
                                             onChange={(e) => handleChange(e, field.attribute_code)}
-                                            placeholder="Awaiting comprehensive data input..."
+                                            placeholder={field.placeholder || 'Enter details...'}
                                         />
                                     )}
 
+                                    {/* SELECT / DROPDOWN — options parsed from validation_rule {in: [var, [opts]]} */}
+                                    {field.widget_type === 'select' && (() => {
+                                        let opts = [];
+                                        try {
+                                            const rule = typeof field.base_validation === 'string'
+                                                ? JSON.parse(field.base_validation)
+                                                : field.base_validation;
+                                            if (rule?.in?.[1]) opts = rule.in[1];
+                                        } catch { /* no options */ }
+                                        // Fallback options for known fields
+                                        if (!opts.length && field.attribute_code === 'admission_category')
+                                            opts = ['GENERAL','OBC','SC','ST','SPORTS','MANAGEMENT'];
+                                        if (!opts.length && field.attribute_code === 'class_applied')
+                                            opts = ['Nursery','LKG','UKG','1','2','3','4','5','6','7','8','9','10','11','12'];
+                                        return (
+                                            <div className="relative">
+                                                <select
+                                                    className="input-standard appearance-none pr-10 cursor-pointer"
+                                                    value={formData[field.attribute_code] || ''}
+                                                    onChange={(e) => handleChange(e, field.attribute_code)}
+                                                >
+                                                    <option value="">— Select —</option>
+                                                    {opts.map(opt => (
+                                                        <option key={opt} value={opt}>{opt}</option>
+                                                    ))}
+                                                </select>
+                                                <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gold/40 pointer-events-none" />
+                                            </div>
+                                        );
+                                    })()}
+
+                                    {/* CHECKBOX */}
                                     {field.widget_type === 'checkbox' && (
-                                        <label className="flex items-center gap-4 p-5 bg-navy-deep border border-gold/10 rounded-xl cursor-none hover:bg-gold/5 hover:border-gold/30 transition-all group">
+                                        <label className="flex items-center gap-4 p-5 bg-navy-deep border border-gold/10 rounded-xl cursor-pointer hover:bg-gold/5 hover:border-gold/30 transition-all group">
                                             <div className="relative flex items-center">
                                                 <input
                                                     type="checkbox"
-                                                    className="peer w-6 h-6 opacity-0 absolute cursor-none"
+                                                    className="peer w-6 h-6 opacity-0 absolute cursor-pointer"
                                                     checked={formData[field.attribute_code] || false}
                                                     onChange={(e) => handleChange(e, field.attribute_code)}
                                                 />
@@ -206,7 +251,9 @@ const DynamicForm = ({ formCode, onNotify }) => {
                                                     <CheckCircle2 size={14} className="text-navy opacity-0 peer-checked:opacity-100 transition-all scale-50 peer-checked:scale-100" />
                                                 </div>
                                             </div>
-                                            <span className="text-xs font-mono font-bold text-slate-500 group-hover:text-gold transition-colors uppercase tracking-widest">Acknowledge & Sync</span>
+                                            <span className="text-xs font-mono font-bold text-slate-500 group-hover:text-gold transition-colors uppercase tracking-widest">
+                                                {field.label_override || field.attribute_code}
+                                            </span>
                                         </label>
                                     )}
                                 </div>

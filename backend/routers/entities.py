@@ -100,6 +100,21 @@ async def _check_permission(
     """
     role: str = getattr(request.state, "role", "app_user")
 
+    # Safeguard: Check if RBAC tables exist before querying (LAW 7/12)
+    # This prevents 'InFailedSQLTransactionError' by avoiding failed queries that abort the transaction.
+    rbac_ready = await conn.fetchval(
+        "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'role_permissions')"
+    )
+
+    if not rbac_ready:
+        # RBAC tables not yet provisioned. Fall back to coarse role check.
+        if role in ("TENANT_ADMIN", "ADMIN"):
+            return
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Role '{role}' is not authorised for {operation} on '{entity_code}'.",
+        )
+
     try:
         row = await conn.fetchrow(
             """
@@ -333,20 +348,20 @@ async def _fetch_eav(
     rows = await conn.fetch(
         """
         SELECT
-            eav.attribute_code,
+            am.attribute_code,
             am.display_label AS label,
             am.data_type,
             CASE am.data_type
-                WHEN 'numeric' THEN eav.value_numeric::text
+                WHEN 'numeric' THEN eav.value_number::text
                 WHEN 'boolean' THEN eav.value_bool::text
-                WHEN 'json'    THEN eav.value_json::text
+                WHEN 'json'    THEN eav.value_jsonb::text
                 ELSE                eav.value_text
             END AS resolved_value
         FROM   entity_attribute_values eav
-        JOIN   attribute_master        am  ON am.attribute_code = eav.attribute_code
-                                           AND am.tenant_id      = eav.tenant_id
+        JOIN   attribute_master        am  ON am.attribute_id = eav.attribute_id
+                                           AND am.tenant_id    = eav.tenant_id
         WHERE  eav.record_id = $1
-        ORDER  BY am.sort_order NULLS LAST, eav.attribute_code
+        ORDER  BY am.sort_order NULLS LAST, am.attribute_code
         """,
         record_id,
     )
@@ -361,20 +376,20 @@ async def _fetch_eav_full(
     rows = await conn.fetch(
         """
         SELECT
-            eav.attribute_code,
+            am.attribute_code,
             am.display_label AS label,
             am.data_type,
             CASE am.data_type
-                WHEN 'numeric' THEN eav.value_numeric::text
+                WHEN 'numeric' THEN eav.value_number::text
                 WHEN 'boolean' THEN eav.value_bool::text
-                WHEN 'json'    THEN eav.value_json::text
+                WHEN 'json'    THEN eav.value_jsonb::text
                 ELSE                eav.value_text
             END AS value
         FROM   entity_attribute_values eav
-        JOIN   attribute_master        am  ON am.attribute_code = eav.attribute_code
-                                           AND am.tenant_id      = eav.tenant_id
+        JOIN   attribute_master        am  ON am.attribute_id = eav.attribute_id
+                                           AND am.tenant_id    = eav.tenant_id
         WHERE  eav.record_id = $1
-        ORDER  BY am.sort_order NULLS LAST, eav.attribute_code
+        ORDER  BY am.sort_order NULLS LAST, am.attribute_code
         """,
         record_id,
     )
